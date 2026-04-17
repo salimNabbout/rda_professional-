@@ -89,8 +89,11 @@ def stats_mes_atual():
     records = query.all()
 
     por_projeto = defaultdict(int)
+    por_status = {"Em Andamento": 0, "Concluído": 0, "Atrasado": 0}
     for r in records:
         por_projeto[r.cliente or "(sem cliente)"] += _minutos_registro(r)
+        if r.status_rda in por_status:
+            por_status[r.status_rda] += 1
 
     total_min = sum(por_projeto.values())
 
@@ -103,6 +106,7 @@ def stats_mes_atual():
         "labels_projeto": labels,
         "horas_por_projeto": horas_decimais,
         "total_registros_mes": len(records),
+        "por_status": por_status,
     }
 
 
@@ -118,7 +122,7 @@ def _form_inicial_vazio():
         "hora_inicio_tarde": "",
         "hora_final_tarde": "",
         "realizado": "",
-        "status_rda": "Andamento",
+        "status_rda": "Em Andamento",
     }
 
 
@@ -156,7 +160,7 @@ def save_record():
         "hora_inicio_tarde": request.form.get("hora_inicio_tarde", "").strip(),
         "hora_final_tarde": request.form.get("hora_final_tarde", "").strip(),
         "realizado": request.form.get("realizado", "").strip(),
-        "status_rda": request.form.get("status_rda", "Andamento").strip(),
+        "status_rda": request.form.get("status_rda", "Em Andamento").strip(),
     }
 
     try:

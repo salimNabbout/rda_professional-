@@ -4,7 +4,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from .extensions import db
 
 
-STATUS_CHOICES = ["Andamento", "Concluído", "Atrasado"]
+STATUS_CHOICES = ["Em Andamento", "Concluído", "Atrasado"]
 ROLE_CHOICES = ["colaborador", "gestor", "admin"]
 
 
@@ -54,7 +54,7 @@ class RDARecord(db.Model):
     duracao = db.Column(db.String(5), nullable=False, default="00:00")
     realizado = db.Column(db.Text, nullable=False)
 
-    status_rda = db.Column(db.String(30), default="Andamento", nullable=False)
+    status_rda = db.Column(db.String(30), default="Em Andamento", nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

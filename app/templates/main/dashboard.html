@@ -38,6 +38,25 @@
       <strong style="font-size:28px;">{{ stats.labels_projeto | length }}</strong>
     </div>
   </div>
+
+  <h3 style="margin:20px 0 8px;">Tarefas por status — mês {{ stats.mes_label }}</h3>
+  <div class="grid grid-3">
+    <div class="status-card amarelo">
+      <span class="label">Em Andamento</span>
+      <span class="count">{{ stats.por_status['Em Andamento'] }}</span>
+      <span class="hint">tarefas em execução</span>
+    </div>
+    <div class="status-card verde">
+      <span class="label">Concluída</span>
+      <span class="count">{{ stats.por_status['Concluído'] }}</span>
+      <span class="hint">tarefas finalizadas</span>
+    </div>
+    <div class="status-card vermelho">
+      <span class="label">Atrasada</span>
+      <span class="count">{{ stats.por_status['Atrasado'] }}</span>
+      <span class="hint">tarefas em atraso</span>
+    </div>
+  </div>
   <div class="grid grid-2" style="margin-top:20px;">
     <div>
       <h3 style="margin:0 0 8px;">Horas por projeto</h3>

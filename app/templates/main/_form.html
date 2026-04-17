@@ -54,8 +54,8 @@
   <div style="margin-top:16px;">
     <label>Status do RDA</label>
     <select name="status_rda">
-      {% set current_status = form.status_rda if form and form.status_rda else 'Andamento' %}
-      {% for status in ['Andamento', 'Concluído', 'Atrasado'] %}
+      {% set current_status = form.status_rda if form and form.status_rda else 'Em Andamento' %}
+      {% for status in ['Em Andamento', 'Concluído', 'Atrasado'] %}
         <option value="{{ status }}" {% if current_status == status %}selected{% endif %}>{{ status }}</option>
       {% endfor %}
     </select>

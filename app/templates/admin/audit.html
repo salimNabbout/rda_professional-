@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Auditoria{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Log de Auditoria</h1>
+      <p>Historico de acoes no sistema.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-secondary" href="{{ url_for('admin.users') }}">Usuarios</a>
+      <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Voltar</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Ultimos eventos</h2>
+  {% if pagination.items %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Data/Hora</th>
+            <th>Usuario</th>
+            <th>Acao</th>
+            <th>Entidade</th>
+            <th>Detalhes</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in pagination.items %}
+            <tr>
+              <td>{{ log.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+              <td>{{ log.username or '-' }}</td>
+              <td><code>{{ log.action }}</code></td>
+              <td>{{ log.entity_type or '-' }}{% if log.entity_id %} #{{ log.entity_id }}{% endif %}</td>
+              <td>{{ log.details or '-' }}</td>
+              <td>{{ log.ip_address or '-' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    {% if pagination.pages > 1 %}
+      <div class="pagination">
+        {% if pagination.has_prev %}
+          <a class="btn btn-secondary" href="{{ url_for('admin.audit', page=pagination.prev_num) }}">Anterior</a>
+        {% endif %}
+        <span>Pagina {{ pagination.page }} de {{ pagination.pages }}</span>
+        {% if pagination.has_next %}
+          <a class="btn btn-secondary" href="{{ url_for('admin.audit', page=pagination.next_num) }}">Proxima</a>
+        {% endif %}
+      </div>
+    {% endif %}
+  {% else %}
+    <div class="empty">Nenhum evento registrado.</div>
+  {% endif %}
+</div>
+{% endblock %}

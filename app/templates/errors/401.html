@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}401 - Nao autenticado{% endblock %}
+{% block content %}
+<div class="banner"><h1>401</h1><p>Voce precisa estar logado.</p></div>
+<div class="card">
+  <p>Sessao expirada ou inexistente.</p>
+  <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Ir para login</a>
+</div>
+{% endblock %}

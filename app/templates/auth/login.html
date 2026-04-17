@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block title %}Acesso RDA{% endblock %}
+{% block content %}
+<div class="banner">
+  <h1>RDA - Relatório Diário de Atividade</h1>
+  <p>{{ 'Criação de conta' if register_mode else 'Login no sistema' }}</p>
+</div>
+
+<div class="card login-box">
+  <h2>{{ 'Criar conta' if register_mode else 'Entrar' }}</h2>
+  <form method="post">
+    <div style="margin-bottom:16px;">
+      <label>Usuário</label>
+      <input name="username" required>
+    </div>
+    <div style="margin-bottom:16px;">
+      <label>Senha</label>
+      <input type="password" name="password" required>
+    </div>
+    <div class="actions">
+      <button type="submit" class="btn-primary">{{ 'Criar conta' if register_mode else 'Entrar' }}</button>
+      {% if register_mode %}
+        <a class="btn btn-secondary" href="{{ url_for('auth.login') }}">Voltar</a>
+      {% else %}
+        <a class="btn btn-secondary" href="{{ url_for('auth.register') }}">Criar conta</a>
+      {% endif %}
+    </div>
+  </form>
+</div>
+{% endblock %}

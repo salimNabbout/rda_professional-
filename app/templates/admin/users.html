@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Usuários{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Administração de Usuários</h1>
+      <p>Gerencie perfis do sistema RDA.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Voltar</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Usuários do sistema</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Usuário</th>
+          <th>Perfil</th>
+          <th>Criado em</th>
+          <th>Ação</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.role }}</td>
+            <td>{{ user.created_at }}</td>
+            <td>
+              <form method="post" action="{{ url_for('admin.update_user_role', user_id=user.id) }}" class="actions">
+                <select name="role">
+                  <option value="colaborador" {% if user.role == 'colaborador' %}selected{% endif %}>colaborador</option>
+                  <option value="gestor" {% if user.role == 'gestor' %}selected{% endif %}>gestor</option>
+                  <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

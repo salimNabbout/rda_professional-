@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}403 - Acesso negado{% endblock %}
+{% block content %}
+<div class="banner"><h1>403</h1><p>Acesso negado.</p></div>
+<div class="card">
+  <p>Voce nao tem permissao para acessar este recurso.</p>
+  <a class="btn btn-primary" href="{{ url_for('main.index') }}">Voltar</a>
+</div>
+{% endblock %}

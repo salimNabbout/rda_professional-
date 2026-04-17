@@ -1,0 +1,115 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard RDA{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>RDA - Relatório Diário de Atividade</h1>
+      <p>Olá, {{ current_user.username }}. Perfil atual: <strong>{{ current_user.role }}</strong>.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-success" href="{{ url_for('main.export_csv', **filters) }}">Exportar CSV</a>
+      <a class="btn btn-secondary" href="{{ url_for('main.api_records', **filters) }}">API JSON</a>
+      {% if current_user.role == 'admin' %}
+        <a class="btn btn-secondary" href="{{ url_for('admin.users') }}">Usuários</a>
+      {% endif %}
+      <a class="btn btn-secondary" href="{{ url_for('auth.logout') }}">Sair</a>
+    </div>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="card">
+    <h2>{{ 'Editar Registro' if editing else 'Novo Registro' }}</h2>
+    {% include 'main/_form.html' %}
+  </div>
+
+  <div class="card">
+    <h2>Relatórios cadastrados</h2>
+
+    <form method="get" action="{{ url_for('main.index') }}" class="card" style="margin-bottom:16px; background:#f8fbff;">
+      <h3>Filtros</h3>
+      <div class="grid grid-3">
+        <div>
+          <label>Data</label>
+          <input type="date" name="f_data" value="{{ filters.f_data }}">
+        </div>
+        <div>
+          <label>Cliente</label>
+          <input name="f_cliente" value="{{ filters.f_cliente }}">
+        </div>
+        <div>
+          <label>Colaborador</label>
+          <input name="f_colaborador" value="{{ filters.f_colaborador }}">
+        </div>
+      </div>
+      <div class="actions" style="margin-top:16px;">
+        <button class="btn-secondary" type="submit">Filtrar</button>
+        <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Limpar filtros</a>
+      </div>
+    </form>
+
+    <div class="summary"><span>Total de registros</span><strong>{{ total_registros }}</strong></div>
+    <div class="summary"><span>Total de horas</span><strong>{{ total_horas }}</strong></div>
+
+    {% if records %}
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              {% if current_user.role in ['gestor', 'admin'] %}
+                <th>Dono</th>
+              {% endif %}
+              <th>Colaborador</th>
+              <th>Cliente</th>
+              <th>Data</th>
+              <th>Início</th>
+              <th>Final</th>
+              <th>Duração</th>
+              <th>Realizado</th>
+              <th>Status</th>
+              <th>Aprovador</th>
+              <th>Responsável</th>
+              <th>Período</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in records %}
+              <tr>
+                {% if current_user.role in ['gestor', 'admin'] %}
+                  <td>{{ item.owner.username if item.owner else '-' }}</td>
+                {% endif %}
+                <td><strong>{{ item.colaborador }}</strong></td>
+                <td>{{ item.cliente }}</td>
+                <td>{{ item.data }}</td>
+                <td>{{ item.hora_inicio }}</td>
+                <td>{{ item.hora_final }}</td>
+                <td>{{ item.duracao }}</td>
+                <td class="multiline">{{ item.realizado }}</td>
+                <td>
+                  {% set cls = item.status_rda.lower().replace(' ', '-').replace('á', 'a') %}
+                  <span class="status {{ cls }}">{{ item.status_rda }}</span>
+                </td>
+                <td>{{ item.aprovador or '-' }}</td>
+                <td>{{ item.responsavel_rda or '-' }}</td>
+                <td>{{ item.periodo_referencia or '-' }}</td>
+                <td>
+                  <div class="actions">
+                    <a class="btn btn-warning" href="{{ url_for('main.edit_record', record_id=item.id) }}">Editar</a>
+                    <form method="post" action="{{ url_for('main.delete_record', record_id=item.id) }}" onsubmit="return confirm('Excluir este registro?');">
+                      <button class="btn btn-danger" type="submit">Excluir</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty">Nenhum registro encontrado.</div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

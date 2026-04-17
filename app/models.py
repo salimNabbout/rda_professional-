@@ -1,0 +1,51 @@
+from datetime import datetime
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
+from .extensions import db
+
+
+class User(UserMixin, db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), nullable=False, default="colaborador")
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+
+    records = db.relationship("RDARecord", backref="owner", lazy=True, cascade="all, delete-orphan")
+
+    def set_password(self, password: str) -> None:
+        self.password_hash = generate_password_hash(password)
+
+    def check_password(self, password: str) -> bool:
+        return check_password_hash(self.password_hash, password)
+
+    def is_admin(self) -> bool:
+        return self.role == "admin"
+
+    def is_gestor(self) -> bool:
+        return self.role == "gestor"
+
+    def is_colaborador(self) -> bool:
+        return self.role == "colaborador"
+
+
+class RDARecord(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+
+    colaborador = db.Column(db.String(150), nullable=False)
+    cliente = db.Column(db.String(150), nullable=False)
+    data = db.Column(db.String(10), nullable=False)
+    hora_inicio = db.Column(db.String(5), nullable=False)
+    hora_final = db.Column(db.String(5), nullable=False)
+    duracao = db.Column(db.String(5), nullable=False)
+    realizado = db.Column(db.Text, nullable=False)
+
+    status_rda = db.Column(db.String(30), default="Em aberto", nullable=False)
+    aprovador = db.Column(db.String(150))
+    responsavel_rda = db.Column(db.String(150))
+    periodo_referencia = db.Column(db.String(100))
+    observacoes_aprovacao = db.Column(db.Text)
+
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)

@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}429 - Muitas tentativas{% endblock %}
+{% block content %}
+<div class="banner"><h1>429</h1><p>Muitas tentativas.</p></div>
+<div class="card">
+  <p>{{ mensagem or 'Voce excedeu o limite de requisicoes. Aguarde um pouco e tente novamente.' }}</p>
+  <a class="btn btn-primary" href="{{ url_for('auth.login') }}">Voltar ao login</a>
+</div>
+{% endblock %}

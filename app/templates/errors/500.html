@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}500 - Erro interno{% endblock %}
+{% block content %}
+<div class="banner"><h1>500</h1><p>Erro interno do servidor.</p></div>
+<div class="card">
+  <p>Algo deu errado. O incidente foi registrado. Tente novamente em alguns instantes.</p>
+  <a class="btn btn-primary" href="{{ url_for('main.index') }}">Voltar</a>
+</div>
+{% endblock %}

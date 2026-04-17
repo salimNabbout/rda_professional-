@@ -1,0 +1,71 @@
+<form method="post" action="{{ url_for('main.save_record') }}">
+  <input type="hidden" name="id" value="{{ form.id if form else '' }}">
+
+  <div class="grid grid-2">
+    <div>
+      <label>Nome do Colaborador</label>
+      <input name="colaborador" value="{{ form.colaborador if form else '' }}" required>
+    </div>
+    <div>
+      <label>Cliente</label>
+      <input name="cliente" value="{{ form.cliente if form else '' }}" required>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="margin-top:16px;">
+    <div>
+      <label>Data</label>
+      <input type="date" name="data" value="{{ form.data if form else '' }}" required>
+    </div>
+    <div>
+      <label>Hora Início</label>
+      <input type="time" name="hora_inicio" value="{{ form.hora_inicio if form else '' }}" required>
+    </div>
+    <div>
+      <label>Hora Final</label>
+      <input type="time" name="hora_final" value="{{ form.hora_final if form else '' }}" required>
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <label>O que foi realizado</label>
+    <textarea name="realizado" required>{{ form.realizado if form else '' }}</textarea>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:16px;">
+    <div>
+      <label>Status do RDA</label>
+      <select name="status_rda">
+        {% set current_status = form.status_rda if form else 'Em aberto' %}
+        {% for status in ['Em aberto', 'Em análise', 'Aprovado', 'Reprovado'] %}
+          <option value="{{ status }}" {% if current_status == status %}selected{% endif %}>{{ status }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label>Aprovador</label>
+      <input name="aprovador" value="{{ form.aprovador if form else '' }}">
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="margin-top:16px;">
+    <div>
+      <label>Responsável pelo RDA</label>
+      <input name="responsavel_rda" value="{{ form.responsavel_rda if form else '' }}">
+    </div>
+    <div>
+      <label>Período de Referência</label>
+      <input name="periodo_referencia" value="{{ form.periodo_referencia if form else '' }}">
+    </div>
+  </div>
+
+  <div style="margin-top:16px;">
+    <label>Observações de aprovação</label>
+    <textarea name="observacoes_aprovacao">{{ form.observacoes_aprovacao if form else '' }}</textarea>
+  </div>
+
+  <div class="actions" style="margin-top:16px;">
+    <button type="submit" class="btn-primary">{{ 'Salvar edição' if editing else 'Adicionar ao RDA' }}</button>
+    <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Limpar</a>
+  </div>
+</form>

@@ -34,10 +34,11 @@ def register():
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
+        nome_completo = request.form.get("nome_completo", "").strip()
         password = request.form.get("password", "")
 
-        if not username or not password:
-            flash("Usuário e senha são obrigatórios.", "error")
+        if not username or not password or not nome_completo:
+            flash("Preencha usuário, nome completo e senha.", "error")
             return render_template("auth/login.html", register_mode=True)
 
         exists = User.query.filter_by(username=username).first()
@@ -45,7 +46,7 @@ def register():
             flash("Esse usuário já existe.", "error")
             return render_template("auth/login.html", register_mode=True)
 
-        user = User(username=username, role="colaborador")
+        user = User(username=username, nome_completo=nome_completo, role="colaborador")
         user.set_password(password)
         db.session.add(user)
         db.session.commit()

@@ -4,4 +4,5 @@ Flask-Login==0.6.3
 Flask-Migrate==4.0.7
 python-dotenv==1.0.1
 Werkzeug==3.0.3
+reportlab==4.2.2
 gunicorn

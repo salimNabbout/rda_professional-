@@ -29,3 +29,19 @@ def update_user_role(user_id: int):
     db.session.commit()
     flash("Perfil do usuário atualizado com sucesso.", "success")
     return redirect(url_for("admin.users"))
+
+
+@admin_bp.route("/users/<int:user_id>/nome", methods=["POST"])
+@login_required
+@roles_required("admin")
+def update_user_nome(user_id: int):
+    nome = request.form.get("nome_completo", "").strip()
+    if not nome:
+        flash("Nome completo não pode ficar em branco.", "error")
+        return redirect(url_for("admin.users"))
+
+    user = User.query.get_or_404(user_id)
+    user.nome_completo = nome
+    db.session.commit()
+    flash("Nome do usuário atualizado.", "success")
+    return redirect(url_for("admin.users"))

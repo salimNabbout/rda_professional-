@@ -10,9 +10,15 @@
   <h2>{{ 'Criar conta' if register_mode else 'Entrar' }}</h2>
   <form method="post">
     <div style="margin-bottom:16px;">
-      <label>Usuário</label>
+      <label>Usuário {% if register_mode %}(pode ser seu e-mail){% endif %}</label>
       <input name="username" required>
     </div>
+    {% if register_mode %}
+    <div style="margin-bottom:16px;">
+      <label>Nome completo</label>
+      <input name="nome_completo" required placeholder="ex.: Salim Nabbout">
+    </div>
+    {% endif %}
     <div style="margin-bottom:16px;">
       <label>Senha</label>
       <input type="password" name="password" required>

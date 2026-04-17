@@ -9,11 +9,43 @@
     </div>
     <div class="actions">
       <a class="btn btn-success" href="{{ url_for('main.export_csv', **filters) }}">Exportar CSV</a>
+      <a class="btn btn-success" href="{{ url_for('main.export_pdf', **filters) }}">Exportar PDF</a>
       <a class="btn btn-secondary" href="{{ url_for('main.api_records', **filters) }}">API JSON</a>
       {% if current_user.role == 'admin' %}
         <a class="btn btn-secondary" href="{{ url_for('admin.users') }}">Usuários</a>
       {% endif %}
       <a class="btn btn-secondary" href="{{ url_for('auth.logout') }}">Sair</a>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px;">
+    <h2 style="margin:0;">Dashboard — mês {{ stats.mes_label }}</h2>
+    <div style="font-size:13px; color:#6b7a99;">Contagem reinicia todo início de mês.</div>
+  </div>
+  <div class="grid grid-3" style="margin-top:16px;">
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Total de horas no mês</span>
+      <strong style="font-size:28px;">{{ stats.total_horas_mes }}</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Registros no mês</span>
+      <strong style="font-size:28px;">{{ stats.total_registros_mes }}</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Projetos ativos no mês</span>
+      <strong style="font-size:28px;">{{ stats.labels_projeto | length }}</strong>
+    </div>
+  </div>
+  <div class="grid grid-2" style="margin-top:20px;">
+    <div>
+      <h3 style="margin:0 0 8px;">Horas por projeto</h3>
+      <canvas id="chartProjeto" height="220"></canvas>
+    </div>
+    <div>
+      <h3 style="margin:0 0 8px;">Total de horas trabalhadas no mês</h3>
+      <canvas id="chartTotal" height="220"></canvas>
     </div>
   </div>
 </div>
@@ -49,8 +81,8 @@
       </div>
     </form>
 
-    <div class="summary"><span>Total de registros</span><strong>{{ total_registros }}</strong></div>
-    <div class="summary"><span>Total de horas</span><strong>{{ total_horas }}</strong></div>
+    <div class="summary"><span>Total de registros (filtro atual)</span><strong>{{ total_registros }}</strong></div>
+    <div class="summary"><span>Total de horas (filtro atual)</span><strong>{{ total_horas }}</strong></div>
 
     {% if records %}
       <div class="table-wrap">
@@ -63,14 +95,13 @@
               <th>Colaborador</th>
               <th>Cliente</th>
               <th>Data</th>
-              <th>Início</th>
-              <th>Final</th>
+              <th>Manhã Ini</th>
+              <th>Manhã Fim</th>
+              <th>Tarde Ini</th>
+              <th>Tarde Fim</th>
               <th>Duração</th>
               <th>Realizado</th>
               <th>Status</th>
-              <th>Aprovador</th>
-              <th>Responsável</th>
-              <th>Período</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -82,18 +113,17 @@
                 {% endif %}
                 <td><strong>{{ item.colaborador }}</strong></td>
                 <td>{{ item.cliente }}</td>
-                <td>{{ item.data }}</td>
-                <td>{{ item.hora_inicio }}</td>
-                <td>{{ item.hora_final }}</td>
+                <td>{{ formatar_data_br(item.data) }}</td>
+                <td>{{ item.hora_inicio_manha }}</td>
+                <td>{{ item.hora_final_manha }}</td>
+                <td>{{ item.hora_inicio_tarde }}</td>
+                <td>{{ item.hora_final_tarde }}</td>
                 <td>{{ item.duracao }}</td>
                 <td class="multiline">{{ item.realizado }}</td>
                 <td>
-                  {% set cls = item.status_rda.lower().replace(' ', '-').replace('á', 'a') %}
+                  {% set cls = item.status_rda.lower().replace(' ', '-').replace('í', 'i').replace('á', 'a') %}
                   <span class="status {{ cls }}">{{ item.status_rda }}</span>
                 </td>
-                <td>{{ item.aprovador or '-' }}</td>
-                <td>{{ item.responsavel_rda or '-' }}</td>
-                <td>{{ item.periodo_referencia or '-' }}</td>
                 <td>
                   <div class="actions">
                     <a class="btn btn-warning" href="{{ url_for('main.edit_record', record_id=item.id) }}">Editar</a>
@@ -112,4 +142,51 @@
     {% endif %}
   </div>
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+  const labelsProjeto = {{ stats.labels_projeto | tojson }};
+  const horasProjeto = {{ stats.horas_por_projeto | tojson }};
+  const totalHorasMes = {{ (stats.total_horas_mes.split(':')[0] | int) + ((stats.total_horas_mes.split(':')[1] | int) / 60) }};
+  const mesLabel = {{ stats.mes_label | tojson }};
+
+  if (labelsProjeto.length > 0) {
+    new Chart(document.getElementById('chartProjeto'), {
+      type: 'bar',
+      data: {
+        labels: labelsProjeto,
+        datasets: [{
+          label: 'Horas',
+          data: horasProjeto,
+          backgroundColor: '#3e63dd',
+        }],
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, title: { display: true, text: 'Horas' } } },
+      },
+    });
+  } else {
+    document.getElementById('chartProjeto').replaceWith(Object.assign(document.createElement('div'), { className: 'empty', innerText: 'Sem dados no mês corrente.' }));
+  }
+
+  new Chart(document.getElementById('chartTotal'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Horas trabalhadas — ' + mesLabel],
+      datasets: [{
+        data: [totalHorasMes || 0.0001],
+        backgroundColor: ['#22c55e'],
+      }],
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' },
+        tooltip: { callbacks: { label: (ctx) => ctx.label + ': ' + totalHorasMes.toFixed(2) + 'h' } },
+      },
+    },
+  });
+</script>
 {% endblock %}

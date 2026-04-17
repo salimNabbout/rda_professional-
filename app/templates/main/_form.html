@@ -4,7 +4,7 @@
   <div class="grid grid-2">
     <div>
       <label>Nome do Colaborador</label>
-      <input name="colaborador" value="{{ form.colaborador if form else '' }}" required>
+      <input name="colaborador" value="{{ form.colaborador if form and form.colaborador else current_user.display_name }}" readonly required>
     </div>
     <div>
       <label>Cliente</label>
@@ -12,56 +12,53 @@
     </div>
   </div>
 
-  <div class="grid grid-3" style="margin-top:16px;">
-    <div>
-      <label>Data</label>
-      <input type="date" name="data" value="{{ form.data if form else '' }}" required>
-    </div>
-    <div>
-      <label>Hora Início</label>
-      <input type="time" name="hora_inicio" value="{{ form.hora_inicio if form else '' }}" required>
-    </div>
-    <div>
-      <label>Hora Final</label>
-      <input type="time" name="hora_final" value="{{ form.hora_final if form else '' }}" required>
-    </div>
+  <div style="margin-top:16px;">
+    <label>Data</label>
+    <input type="date" name="data" value="{{ form.data if form else '' }}" required>
   </div>
+
+  <fieldset style="margin-top:16px; padding:12px; border:1px solid #d9e1f2; border-radius:8px;">
+    <legend style="padding:0 8px; font-weight:600; color:#1f2d5a;">Período da Manhã</legend>
+    <div class="grid grid-2">
+      <div>
+        <label>Hora Início</label>
+        <input type="time" name="hora_inicio_manha" value="{{ form.hora_inicio_manha if form else '' }}">
+      </div>
+      <div>
+        <label>Hora Final</label>
+        <input type="time" name="hora_final_manha" value="{{ form.hora_final_manha if form else '' }}">
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset style="margin-top:12px; padding:12px; border:1px solid #d9e1f2; border-radius:8px;">
+    <legend style="padding:0 8px; font-weight:600; color:#1f2d5a;">Período da Tarde</legend>
+    <div class="grid grid-2">
+      <div>
+        <label>Hora Início</label>
+        <input type="time" name="hora_inicio_tarde" value="{{ form.hora_inicio_tarde if form else '' }}">
+      </div>
+      <div>
+        <label>Hora Final</label>
+        <input type="time" name="hora_final_tarde" value="{{ form.hora_final_tarde if form else '' }}">
+      </div>
+    </div>
+    <p style="margin:8px 0 0; font-size:12px; color:#6b7a99;">Campos em branco são considerados zero.</p>
+  </fieldset>
 
   <div style="margin-top:16px;">
     <label>O que foi realizado</label>
     <textarea name="realizado" required>{{ form.realizado if form else '' }}</textarea>
   </div>
 
-  <div class="grid grid-2" style="margin-top:16px;">
-    <div>
-      <label>Status do RDA</label>
-      <select name="status_rda">
-        {% set current_status = form.status_rda if form else 'Em aberto' %}
-        {% for status in ['Em aberto', 'Em análise', 'Aprovado', 'Reprovado'] %}
-          <option value="{{ status }}" {% if current_status == status %}selected{% endif %}>{{ status }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div>
-      <label>Aprovador</label>
-      <input name="aprovador" value="{{ form.aprovador if form else '' }}">
-    </div>
-  </div>
-
-  <div class="grid grid-2" style="margin-top:16px;">
-    <div>
-      <label>Responsável pelo RDA</label>
-      <input name="responsavel_rda" value="{{ form.responsavel_rda if form else '' }}">
-    </div>
-    <div>
-      <label>Período de Referência</label>
-      <input name="periodo_referencia" value="{{ form.periodo_referencia if form else '' }}">
-    </div>
-  </div>
-
   <div style="margin-top:16px;">
-    <label>Observações de aprovação</label>
-    <textarea name="observacoes_aprovacao">{{ form.observacoes_aprovacao if form else '' }}</textarea>
+    <label>Status do RDA</label>
+    <select name="status_rda">
+      {% set current_status = form.status_rda if form and form.status_rda else 'Andamento' %}
+      {% for status in ['Andamento', 'Concluído', 'Atrasado'] %}
+        <option value="{{ status }}" {% if current_status == status %}selected{% endif %}>{{ status }}</option>
+      {% endfor %}
+    </select>
   </div>
 
   <div class="actions" style="margin-top:16px;">

@@ -35,3 +35,4 @@ Thumbs.db
 # Claude
 .claude/
 app-LAPTOP-*.py
+_migrate_v2.py

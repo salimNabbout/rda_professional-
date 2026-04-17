@@ -7,7 +7,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 
 from app.extensions import db
-from app.models import RDARecord
+from app.models import RDARecord, TAP
 
 
 main_bp = Blueprint("main", __name__)
@@ -118,6 +118,13 @@ def stats_mes_atual():
     }
 
 
+def clientes_disponiveis_tap():
+    """Retorna rótulos 'CTRL - Cliente' das TAPs com status Fechado.
+    Concluído/Perdido/Aguardando não aparecem."""
+    taps = TAP.query.filter_by(status_proposta="Fechado").order_by(TAP.ctrl_numero.asc()).all()
+    return [t.rotulo_cliente for t in taps]
+
+
 def _form_inicial_vazio():
     """Retorna dicionário com nome pré-preenchido do usuário."""
     return {
@@ -151,6 +158,7 @@ def index():
         editing=False,
         stats=stats_mes_atual(),
         formatar_data_br=formatar_data_br,
+        clientes_tap=clientes_disponiveis_tap(),
     )
 
 
@@ -219,6 +227,7 @@ def save_record():
             editing=bool(record_id),
             stats=stats_mes_atual(),
             formatar_data_br=formatar_data_br,
+            clientes_tap=clientes_disponiveis_tap(),
         )
 
 
@@ -244,6 +253,7 @@ def edit_record(record_id: int):
         editing=True,
         stats=stats_mes_atual(),
         formatar_data_br=formatar_data_br,
+        clientes_tap=clientes_disponiveis_tap(),
     )
 
 

@@ -8,7 +8,15 @@
     </div>
     <div>
       <label>Cliente</label>
-      <input name="cliente" value="{{ form.cliente if form else '' }}" required>
+      <input name="cliente" value="{{ form.cliente if form else '' }}" list="clientesTAP" required placeholder="Selecione um projeto ou digite">
+      <datalist id="clientesTAP">
+        {% for c in clientes_tap or [] %}
+          <option value="{{ c }}"></option>
+        {% endfor %}
+      </datalist>
+      {% if clientes_tap %}
+        <small style="display:block; margin-top:4px; color:#6b7a99; font-size:11px;">{{ clientes_tap | length }} projeto(s) fechado(s) disponível(is) via TAP.</small>
+      {% endif %}
     </div>
   </div>
 

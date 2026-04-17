@@ -18,14 +18,13 @@
   <div class="table-wrap">
     <table>
       <thead>
-        <tr>
-          <th>ID</th>
+<th>ID</th>
           <th>Usuário (login)</th>
           <th>Nome completo</th>
           <th>Perfil</th>
+          <th>Acesso TAP</th>
           <th>Criado em</th>
           <th>Ações</th>
-        </tr>
       </thead>
       <tbody>
         {% for user in users %}
@@ -39,6 +38,15 @@
               </form>
             </td>
             <td>{{ user.role }}</td>
+            <td>
+              <form method="post" action="{{ url_for('admin.update_user_tap', user_id=user.id) }}" class="actions">
+                <select name="acesso_tap">
+                  <option value="0" {% if not user.acesso_tap %}selected{% endif %}>Não</option>
+                  <option value="1" {% if user.acesso_tap %}selected{% endif %}>Sim</option>
+                </select>
+                <button type="submit" class="btn btn-primary">Salvar</button>
+              </form>
+            </td>
             <td>{{ user.created_at }}</td>
             <td>
               <form method="post" action="{{ url_for('admin.update_user_role', user_id=user.id) }}" class="actions">

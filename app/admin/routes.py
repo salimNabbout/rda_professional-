@@ -45,3 +45,17 @@ def update_user_nome(user_id: int):
     db.session.commit()
     flash("Nome do usuário atualizado.", "success")
     return redirect(url_for("admin.users"))
+
+
+@admin_bp.route("/users/<int:user_id>/tap", methods=["POST"])
+@login_required
+@roles_required("admin")
+def update_user_tap(user_id: int):
+    user = User.query.get_or_404(user_id)
+    user.acesso_tap = request.form.get("acesso_tap") == "1"
+    db.session.commit()
+    flash(
+        f"Acesso ao TAP {'liberado' if user.acesso_tap else 'revogado'} para {user.display_name}.",
+        "success",
+    )
+    return redirect(url_for("admin.users"))

@@ -1,0 +1,129 @@
+{% extends 'base.html' %}
+{% block title %}{{ 'Editar' if editing else 'Nova' }} TAP{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>{{ 'Editar' if editing else 'Nova' }} TAP</h1>
+      <p>Termo de Abertura de Projeto — Estrutura Analítica (EAP)</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-secondary" href="{{ url_for('tap.list_taps') }}">← Voltar para lista</a>
+    </div>
+  </div>
+</div>
+
+<form method="post" id="tapForm">
+  <div class="card">
+    <h2>Dados do Projeto</h2>
+    <div class="grid grid-3">
+      <div>
+        <label>CTRL Nº</label>
+        <input name="ctrl_numero" value="{{ tap.ctrl_numero or '' }}" required maxlength="50" placeholder="ex: PROJ-2026-001">
+      </div>
+      <div>
+        <label>Cliente</label>
+        <input name="cliente" value="{{ tap.cliente or '' }}" required maxlength="200">
+      </div>
+      <div>
+        <label>Valor HH (R$)</label>
+        <input type="number" step="0.01" min="0" name="hh_valor" id="hhValor" value="{{ '%.2f' % (tap.hh_valor or 0) }}" required>
+      </div>
+    </div>
+
+    <div style="margin-top:16px;">
+      <label>Status da Proposta</label>
+      <div class="status-radios">
+        {% for opt in ['Aguardando', 'Fechado', 'Perdido', 'Concluído'] %}
+          <label class="status-radio">
+            <input type="radio" name="status_proposta" value="{{ opt }}" {% if tap.status_proposta == opt %}checked{% endif %}>
+            <span>{{ opt }}</span>
+          </label>
+        {% endfor %}
+      </div>
+      <p style="margin:8px 0 0; font-size:12px; color:#6b7a99;">
+        <strong>Fechado</strong> → projeto fica disponível na caixa "Cliente" do RDA para todos os colaboradores.
+        <strong>Concluído</strong> → sai da caixa Cliente do RDA.
+      </p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h2>EAP — Estrutura Analítica do Projeto</h2>
+    <div class="table-wrap">
+      <table class="tap-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Entregável</th>
+            <th>Qtd. Rec.</th>
+            <th>Tempo (h)</th>
+            <th>Valor Total</th>
+            <th>% Correção</th>
+            <th>Valor Corrigido</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in tap.itens %}
+            <tr data-ordem="{{ item.ordem }}">
+              <td>{{ item.ordem }}</td>
+              <td>{{ item.entregavel }}</td>
+              <td><input type="number" step="0.01" min="0" name="item_{{ item.ordem }}_qtd" value="{{ '%g' % (item.qtd_recursos or 0) }}" class="inp-qtd"></td>
+              <td><input type="number" step="0.01" min="0" name="item_{{ item.ordem }}_tempo" value="{{ '%g' % (item.tempo or 0) }}" class="inp-tempo"></td>
+              <td class="valor-total">R$ 0,00</td>
+              <td><input type="number" step="0.01" min="0" max="1" name="item_{{ item.ordem }}_pct" value="{{ '%g' % (item.percentual_correcao or 0) }}" class="inp-pct" placeholder="0.1 = 10%"></td>
+              <td class="valor-corrigido">R$ 0,00</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" style="text-align:right;"><strong>Totais</strong></td>
+            <td class="total-sem" style="font-weight:700;">R$ 0,00</td>
+            <td></td>
+            <td class="total-com" style="font-weight:700;">R$ 0,00</td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+    <p style="margin:8px 0 0; font-size:12px; color:#6b7a99;">Valor Total = Qtd × Tempo × HH. Valor Corrigido = Valor Total × (1 − % Correção). % Correção: 0,1 = 10%.</p>
+  </div>
+
+  <div class="actions" style="margin-top:20px;">
+    <button type="submit" class="btn-primary">{{ 'Salvar alterações' if editing else 'Criar TAP' }}</button>
+    <a class="btn btn-secondary" href="{{ url_for('tap.list_taps') }}">Cancelar</a>
+  </div>
+</form>
+
+<script>
+  (function () {
+    const form = document.getElementById('tapForm');
+    const hhInput = document.getElementById('hhValor');
+    if (!form || !hhInput) return;
+
+    const fmt = (v) => 'R$ ' + (v || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    const num = (el) => parseFloat((el && el.value || '0').replace(',', '.')) || 0;
+
+    function recalcular() {
+      const hh = num(hhInput);
+      let totSem = 0, totCom = 0;
+      form.querySelectorAll('tbody tr').forEach((tr) => {
+        const qtd = num(tr.querySelector('.inp-qtd'));
+        const tempo = num(tr.querySelector('.inp-tempo'));
+        const pct = num(tr.querySelector('.inp-pct'));
+        const valor = qtd * tempo * hh;
+        const corrig = valor * (1 - pct);
+        tr.querySelector('.valor-total').textContent = fmt(valor);
+        tr.querySelector('.valor-corrigido').textContent = fmt(corrig);
+        totSem += valor;
+        totCom += corrig;
+      });
+      form.querySelector('.total-sem').textContent = fmt(totSem);
+      form.querySelector('.total-com').textContent = fmt(totCom);
+    }
+
+    form.addEventListener('input', recalcular);
+    recalcular();
+  })();
+</script>
+{% endblock %}

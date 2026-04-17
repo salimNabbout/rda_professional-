@@ -11,6 +11,9 @@
       <a class="btn btn-success" href="{{ url_for('main.export_csv', **filters) }}">Exportar CSV</a>
       <a class="btn btn-success" href="{{ url_for('main.export_pdf', **filters) }}">Exportar PDF</a>
       <a class="btn btn-secondary" href="{{ url_for('main.api_records', **filters) }}">API JSON</a>
+      {% if current_user.acesso_tap or current_user.is_admin() %}
+        <a class="btn btn-primary" href="{{ url_for('tap.list_taps') }}">TAP</a>
+      {% endif %}
       {% if current_user.role == 'admin' %}
         <a class="btn btn-secondary" href="{{ url_for('admin.users') }}">Usuários</a>
       {% endif %}

@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+{% block title %}TAPs — Termos de Abertura de Projeto{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>TAP - Termo de Abertura de Projeto</h1>
+      <p>Cadastro e orçamento de projetos. Acesso restrito.</p>
+    </div>
+    <div class="actions">
+      <a class="btn btn-primary" href="{{ url_for('tap.novo') }}">+ Nova TAP</a>
+      <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Voltar ao RDA</a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>TAPs cadastradas</h2>
+  {% if taps %}
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>CTRL Nº</th>
+            <th>Cliente</th>
+            <th>Status da Proposta</th>
+            <th>HH (R$)</th>
+            <th>Valor Total</th>
+            <th>Valor Corrigido</th>
+            <th>No RDA?</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in taps %}
+            <tr>
+              <td><strong>{{ t.ctrl_numero }}</strong></td>
+              <td>{{ t.cliente }}</td>
+              <td>
+                {% set cls = t.status_proposta.lower().replace(' ', '-').replace('í','i').replace('é','e') %}
+                <span class="status tap-status-{{ cls }}">{{ t.status_proposta }}</span>
+              </td>
+              <td>R$ {{ '%.2f' % t.hh_valor | float }}</td>
+              <td>R$ {{ '%.2f' % t.valor_total }}</td>
+              <td>R$ {{ '%.2f' % t.valor_total_corrigido }}</td>
+              <td>
+                {% if t.disponivel_no_rda %}
+                  <span class="status concluido">Disponível</span>
+                {% else %}
+                  <span class="status atrasado">Não</span>
+                {% endif %}
+              </td>
+              <td>
+                <div class="actions">
+                  <a class="btn btn-warning" href="{{ url_for('tap.editar', tap_id=t.id) }}">Abrir</a>
+                  <form method="post" action="{{ url_for('tap.excluir', tap_id=t.id) }}" onsubmit="return confirm('Excluir esta TAP?');">
+                    <button class="btn btn-danger" type="submit">Excluir</button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">Nenhuma TAP cadastrada. Clique em "+ Nova TAP" para começar.</div>
+  {% endif %}
+</div>
+{% endblock %}

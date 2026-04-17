@@ -48,8 +48,42 @@
 
   <div style="margin-top:16px;">
     <label>O que foi realizado</label>
-    <textarea name="realizado" required>{{ form.realizado if form else '' }}</textarea>
+    <select id="atividadePredefinida" style="margin-bottom:8px;">
+      <option value="">— Selecione uma atividade para inserir —</option>
+      <option>Visita Técnica ou Comercial</option>
+      <option>Reunião Técnica ou Comercial</option>
+      <option>Elaboração de Proposta</option>
+      <option>Projetos</option>
+      <option>Desenvolvimento Software PLC</option>
+      <option>Desenvolvimento Software IHM</option>
+      <option>Desenvolvimento Software SCADA</option>
+      <option>Desenvolvimento Software Agêntica</option>
+      <option>Design (Telas)</option>
+      <option>Montagem de Painéis</option>
+      <option>Instalações de Painéis</option>
+      <option>Comissionamento</option>
+      <option>Partida Assistida</option>
+      <option>Treinamento</option>
+      <option>Elaboração de DataBook</option>
+    </select>
+    <textarea name="realizado" id="realizadoTextarea" required placeholder="Selecione acima ou digite livremente. É possível combinar várias atividades.">{{ form.realizado if form else '' }}</textarea>
   </div>
+
+  <script>
+    (function () {
+      const sel = document.getElementById('atividadePredefinida');
+      const txt = document.getElementById('realizadoTextarea');
+      if (!sel || !txt) return;
+      sel.addEventListener('change', function () {
+        const v = sel.value;
+        if (!v) return;
+        const atual = txt.value.trim();
+        txt.value = atual ? atual + '\n' + v : v;
+        sel.value = '';
+        txt.focus();
+      });
+    })();
+  </script>
 
   <div style="margin-top:16px;">
     <label>Status do RDA</label>

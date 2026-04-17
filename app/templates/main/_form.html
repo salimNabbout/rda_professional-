@@ -49,7 +49,7 @@
   <div style="margin-top:16px;">
     <label>O que foi realizado</label>
     <select id="atividadePredefinida" style="margin-bottom:8px;">
-      <option value="">— Selecione uma atividade para inserir —</option>
+      <option value="">Selecione uma Atividade</option>
       <option>Visita Técnica ou Comercial</option>
       <option>Reunião Técnica ou Comercial</option>
       <option>Elaboração de Proposta</option>
@@ -66,7 +66,7 @@
       <option>Treinamento</option>
       <option>Elaboração de DataBook</option>
     </select>
-    <textarea name="realizado" id="realizadoTextarea" required placeholder="Selecione acima ou digite livremente. É possível combinar várias atividades.">{{ form.realizado if form else '' }}</textarea>
+    <textarea name="realizado" id="realizadoTextarea" required placeholder="Selecione uma Atividade">{{ form.realizado if form else '' }}</textarea>
   </div>
 
   <script>

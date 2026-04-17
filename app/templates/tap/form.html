@@ -8,6 +8,10 @@
       <p>Termo de Abertura de Projeto — Estrutura Analítica (EAP)</p>
     </div>
     <div class="actions">
+      {% if editing and tap.id %}
+        <a class="btn btn-success" href="{{ url_for('tap.export_csv_detalhe', tap_id=tap.id) }}">Exportar CSV</a>
+        <a class="btn btn-success" href="{{ url_for('tap.export_pdf_detalhe', tap_id=tap.id) }}">Exportar PDF</a>
+      {% endif %}
       <a class="btn btn-secondary" href="{{ url_for('tap.list_taps') }}">← Voltar para lista</a>
     </div>
   </div>

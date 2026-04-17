@@ -106,8 +106,8 @@ class TAP(db.Model):
 
     @property
     def rotulo_cliente(self) -> str:
-        """Formato usado na caixa Cliente do RDA: 'CTRL - Cliente'."""
-        return f"{self.ctrl_numero} - {self.cliente}"
+        """Formato usado na caixa Cliente do RDA: 'Cliente / CTRL Nº'."""
+        return f"{self.cliente} / {self.ctrl_numero}"
 
     @property
     def valor_total(self) -> float:
@@ -140,4 +140,7 @@ class TAPItem(db.Model):
 
     @property
     def valor_total_corrigido(self) -> float:
-        return self.valor_total * (1 - (self.percentual_correcao or 0))
+        pct = self.percentual_correcao or 0
+        if pct <= 0:
+            return self.valor_total
+        return self.valor_total * (1 - pct)

@@ -98,17 +98,18 @@ def _salvar(tap: TAP | None):
     db.session.flush()  # garante que os itens estejam acessíveis por ordem
 
     # Atualiza os 15 itens a partir dos campos do form.
+    # % vem do UI em 0..100 (ex: 10 = 10%) e é armazenada como decimal (0.1).
     itens_por_ordem = {i.ordem: i for i in tap.itens}
     for ordem in range(1, len(TAP_ENTREGAVEIS) + 1):
         qtd = _parse_float(request.form.get(f"item_{ordem}_qtd"))
         tempo = _parse_float(request.form.get(f"item_{ordem}_tempo"))
-        pct = _parse_float(request.form.get(f"item_{ordem}_pct"))
+        pct_ui = _parse_float(request.form.get(f"item_{ordem}_pct"))
         item = itens_por_ordem.get(ordem)
         if not item:
             continue
         item.qtd_recursos = qtd
         item.tempo = tempo
-        item.percentual_correcao = pct
+        item.percentual_correcao = pct_ui / 100.0
 
     db.session.commit()
     flash("TAP salva com sucesso.", "success")

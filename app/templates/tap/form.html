@@ -52,6 +52,15 @@
     <h2>EAP — Estrutura Analítica do Projeto</h2>
     <div class="table-wrap">
       <table class="tap-table">
+        <colgroup>
+          <col class="c-id">
+          <col class="c-entregavel">
+          <col class="c-qtd">
+          <col class="c-tempo">
+          <col class="c-valor">
+          <col class="c-pct">
+          <col class="c-corrig">
+        </colgroup>
         <thead>
           <tr>
             <th>ID</th>
@@ -59,7 +68,7 @@
             <th>Qtd. Rec.</th>
             <th>Tempo (h)</th>
             <th>Valor Total</th>
-            <th>% Correção</th>
+            <th>% Corr.</th>
             <th>Valor Corrigido</th>
           </tr>
         </thead>
@@ -68,10 +77,10 @@
             <tr data-ordem="{{ item.ordem }}">
               <td>{{ item.ordem }}</td>
               <td>{{ item.entregavel }}</td>
-              <td><input type="number" step="0.01" min="0" name="item_{{ item.ordem }}_qtd" value="{{ '%g' % (item.qtd_recursos or 0) }}" class="inp-qtd"></td>
-              <td><input type="number" step="0.01" min="0" name="item_{{ item.ordem }}_tempo" value="{{ '%g' % (item.tempo or 0) }}" class="inp-tempo"></td>
+              <td><input type="number" step="0.5" min="0" name="item_{{ item.ordem }}_qtd" value="{{ '%g' % (item.qtd_recursos or 0) }}" class="inp-qtd"></td>
+              <td><input type="number" step="0.5" min="0" name="item_{{ item.ordem }}_tempo" value="{{ '%g' % (item.tempo or 0) }}" class="inp-tempo"></td>
               <td class="valor-total">R$ 0,00</td>
-              <td><input type="number" step="0.01" min="0" max="1" name="item_{{ item.ordem }}_pct" value="{{ '%g' % (item.percentual_correcao or 0) }}" class="inp-pct" placeholder="0.1 = 10%"></td>
+              <td><input type="number" step="0.5" min="0" max="100" name="item_{{ item.ordem }}_pct" value="{{ '%g' % ((item.percentual_correcao or 0) * 100) }}" class="inp-pct" placeholder="10 = 10%"></td>
               <td class="valor-corrigido">R$ 0,00</td>
             </tr>
           {% endfor %}
@@ -86,7 +95,7 @@
         </tfoot>
       </table>
     </div>
-    <p style="margin:8px 0 0; font-size:12px; color:#6b7a99;">Valor Total = Qtd × Tempo × HH. Valor Corrigido = Valor Total × (1 − % Correção). % Correção: 0,1 = 10%.</p>
+    <p style="margin:8px 0 0; font-size:12px; color:#6b7a99;">Valor Total = Qtd × Tempo × HH. Valor Corrigido: se % = 0, mantém o Valor Total; se % &gt; 0, multiplica por (100% − %). Incremento de 0,5.</p>
   </div>
 
   <div class="actions" style="margin-top:20px;">
@@ -110,9 +119,9 @@
       form.querySelectorAll('tbody tr').forEach((tr) => {
         const qtd = num(tr.querySelector('.inp-qtd'));
         const tempo = num(tr.querySelector('.inp-tempo'));
-        const pct = num(tr.querySelector('.inp-pct'));
+        const pctUi = num(tr.querySelector('.inp-pct')); // 0..100
         const valor = qtd * tempo * hh;
-        const corrig = valor * (1 - pct);
+        const corrig = pctUi > 0 ? valor * (1 - pctUi / 100) : valor;
         tr.querySelector('.valor-total').textContent = fmt(valor);
         tr.querySelector('.valor-corrigido').textContent = fmt(corrig);
         totSem += valor;

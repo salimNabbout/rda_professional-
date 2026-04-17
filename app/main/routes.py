@@ -89,9 +89,17 @@ def stats_mes_atual():
     records = query.all()
 
     por_projeto = defaultdict(int)
-    por_status = {"Em Andamento": 0, "Concluído": 0, "Atrasado": 0}
     for r in records:
         por_projeto[r.cliente or "(sem cliente)"] += _minutos_registro(r)
+
+    # Status de cada projeto = status do registro mais recente daquele cliente no mês.
+    # Assim a soma dos 3 status = número de projetos ativos no mês.
+    ultimo_por_projeto = {}
+    for r in sorted(records, key=lambda x: (x.data, x.id)):
+        ultimo_por_projeto[r.cliente or "(sem cliente)"] = r
+
+    por_status = {"Em Andamento": 0, "Concluído": 0, "Atrasado": 0}
+    for r in ultimo_por_projeto.values():
         if r.status_rda in por_status:
             por_status[r.status_rda] += 1
 

@@ -1,11 +1,22 @@
+databases:
+  - name: rda-db
+    databaseName: rda
+    user: rda
+    plan: free
+
 services:
   - type: web
     name: rda-app
     runtime: python
+    plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: DATABASE_URL
-        value: sqlite:///rda.db
+        fromDatabase:
+          name: rda-db
+          property: connectionString
+      - key: PYTHON_VERSION
+        value: "3.11.9"

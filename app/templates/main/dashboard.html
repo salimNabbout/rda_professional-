@@ -35,7 +35,7 @@
 
 <div class="card" style="margin-bottom:20px;">
   <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-    <h2 style="margin:0;">Dashboard — mês {{ stats.mes_label }}</h2>
+    <h2 style="margin:0;">Dashboard — Mês {{ stats.mes_label }}</h2>
     <form method="get" action="{{ url_for('main.index') }}" style="display:flex; align-items:center; gap:8px; margin:0;">
       <label for="mesDashboard" style="margin:0; font-size:12px; color:#334155;">Selecionar mês:</label>
       <select id="mesDashboard" name="mes" onchange="this.form.submit()" style="width:auto; min-width:140px; padding:6px 10px; font-size:13px;">
@@ -86,17 +86,17 @@
     <div class="status-card amarelo">
       <span class="label">Em Andamento</span>
       <span class="count">{{ stats.por_status['Em Andamento'] }}</span>
-      <span class="hint">tarefas em execução</span>
+      <span class="hint">Tarefas em execução</span>
     </div>
     <div class="status-card verde">
       <span class="label">Concluída</span>
       <span class="count">{{ stats.por_status['Concluído'] }}</span>
-      <span class="hint">tarefas finalizadas</span>
+      <span class="hint">Tarefas finalizadas</span>
     </div>
     <div class="status-card vermelho">
       <span class="label">Atrasada</span>
       <span class="count">{{ stats.por_status['Atrasado'] }}</span>
-      <span class="hint">tarefas em atraso (permanece após conclusão)</span>
+      <span class="hint">Tarefas em atraso (permanece após conclusão)</span>
     </div>
   </div>
   <div class="grid grid-2" style="margin-top:20px;">

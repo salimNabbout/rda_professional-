@@ -26,25 +26,25 @@
   {% import '_icons.html' as icons %}
   <nav id="sidebar" aria-label="Navegação principal">
     <div class="sb-logo">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
-      <span>CETEM Flow</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      <span>CETEM Tecnologia</span>
     </div>
-    <a class="sb-item sb-secondary" href="{{ url_for('main.index') }}" title="RDA">{{ icons.back() }}<span>RDA</span></a>
+    <a class="sb-item sb-rda" href="{{ url_for('main.index') }}" title="RDA">{{ icons.back() }}<span>RDA</span></a>
     {% if current_user.acesso_tap or current_user.is_admin() %}
-    <a class="sb-item sb-primary" href="{{ url_for('tap.list_taps') }}" title="TAP">{{ icons.tap() }}<span>TAP</span></a>
+    <a class="sb-item sb-tap" href="{{ url_for('tap.list_taps') }}" title="TAP">{{ icons.tap() }}<span>TAP</span></a>
     {% endif %}
-    <a class="sb-item sb-primary" href="{{ url_for('main.performance') }}" title="Performance">{{ icons.performance() }}<span>Performance</span></a>
-    <a class="sb-item sb-primary" href="{{ url_for('main.performance_gantt') }}" title="Gantt">{{ icons.gantt() }}<span>Gantt</span></a>
+    <a class="sb-item sb-perf" href="{{ url_for('main.performance') }}" title="Performance">{{ icons.performance() }}<span>Performance</span></a>
+    <a class="sb-item sb-gantt" href="{{ url_for('main.performance_gantt') }}" title="Gantt">{{ icons.gantt() }}<span>Gantt</span></a>
     {% if current_user.is_admin() %}
-    <a class="sb-item sb-primary" href="{{ url_for('main.predicao') }}" title="Predição">{{ icons.predicao() }}<span>Predição</span></a>
+    <a class="sb-item sb-pred" href="{{ url_for('main.predicao') }}" title="Predição">{{ icons.predicao() }}<span>Predição</span></a>
     {% endif %}
     {% if current_user.is_admin() or current_user.acesso_produtividade %}
-    <a class="sb-item sb-primary" href="{{ url_for('main.performance_colaboradores') }}" title="PDI">{{ icons.produtividade() }}<span>PDI</span></a>
+    <a class="sb-item sb-pdi" href="{{ url_for('main.performance_colaboradores') }}" title="PDI">{{ icons.produtividade() }}<span>PDI</span></a>
     {% endif %}
     {% if current_user.is_admin() %}
     <a class="sb-item sb-danger" href="{{ url_for('main.avaliacao') }}" title="Avaliação IA">{{ icons.avaliacao() }}<span>Avaliação IA</span></a>
-    <a class="sb-item sb-secondary" href="{{ url_for('admin.users') }}" title="Usuários">{{ icons.users() }}<span>Usuários</span></a>
-    <a class="sb-item sb-secondary" href="{{ url_for('admin.acessos') }}" title="Acessos">{{ icons.acessos() }}<span>Acessos</span></a>
+    <a class="sb-item sb-admin" href="{{ url_for('admin.users') }}" title="Usuários">{{ icons.users() }}<span>Usuários</span></a>
+    <a class="sb-item sb-admin" href="{{ url_for('admin.acessos') }}" title="Acessos">{{ icons.acessos() }}<span>Acessos</span></a>
     {% endif %}
     <div class="sb-spacer"></div>
     <button type="button" class="sb-item sb-theme" onclick="toggleTheme()" title="Alternar tema">
@@ -65,7 +65,7 @@
     }
     #sidebar:hover { width: 200px; }
     .sb-logo { display: flex; align-items: center; gap: 10px; padding: 16px 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.12); white-space: nowrap; overflow: hidden; min-height: 56px; }
-    .sb-logo svg { width: 28px; height: 28px; flex-shrink: 0; color: #fff; }
+    .sb-logo svg { width: 28px; height: 28px; flex-shrink: 0; }
     .sb-logo span { font-size: 13px; font-weight: 800; color: #fff; opacity: 0; transition: opacity 0.18s ease; }
     #sidebar:hover .sb-logo span { opacity: 1; }
     .sb-item { display: flex; align-items: center; gap: 12px; padding: 11px 16px; color: rgba(255,255,255,0.78); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; cursor: pointer; background: transparent; border: none; text-align: left; transition: background 0.15s, color 0.15s; width: 100%; box-sizing: border-box; }
@@ -73,17 +73,27 @@
     .sb-item span { opacity: 0; transition: opacity 0.18s ease; }
     #sidebar:hover .sb-item span { opacity: 1; }
     .sb-item:hover { background: rgba(255,255,255,0.14); color: #fff; }
-    /* Cores dos ícones por categoria */
-    .sb-primary { color: #93c5fd !important; }
-    .sb-primary:hover { background: rgba(59,130,246,0.2) !important; color: #bfdbfe !important; }
-    .sb-secondary { color: #cbd5e1 !important; }
-    .sb-secondary:hover { background: rgba(255,255,255,0.14) !important; color: #fff !important; }
-    .sb-success { color: #86efac !important; }
-    .sb-success:hover { background: rgba(22,163,74,0.2) !important; color: #bbf7d0 !important; }
-    .sb-danger { color: #fca5a5 !important; }
-    .sb-danger:hover { background: rgba(220,38,38,0.25) !important; color: #fecaca !important; }
-    .sb-logout { color: rgba(255,255,255,0.45) !important; }
-    .sb-logout:hover { background: rgba(220,38,38,0.2) !important; color: #fca5a5 !important; }
+    /* Cores dos ícones por categoria — alta especificidade para vencer dark mode */
+    #sidebar .sb-rda    { color: #94a3b8 !important; }
+    #sidebar .sb-rda:hover { background: rgba(148,163,184,0.15) !important; color: #e2e8f0 !important; }
+    #sidebar .sb-tap    { color: #60a5fa !important; }
+    #sidebar .sb-tap:hover { background: rgba(96,165,250,0.18) !important; color: #93c5fd !important; }
+    #sidebar .sb-perf   { color: #34d399 !important; }
+    #sidebar .sb-perf:hover { background: rgba(52,211,153,0.18) !important; color: #6ee7b7 !important; }
+    #sidebar .sb-gantt  { color: #a78bfa !important; }
+    #sidebar .sb-gantt:hover { background: rgba(167,139,250,0.18) !important; color: #c4b5fd !important; }
+    #sidebar .sb-pred   { color: #fbbf24 !important; }
+    #sidebar .sb-pred:hover { background: rgba(251,191,36,0.18) !important; color: #fcd34d !important; }
+    #sidebar .sb-pdi    { color: #4ade80 !important; }
+    #sidebar .sb-pdi:hover { background: rgba(74,222,128,0.18) !important; color: #86efac !important; }
+    #sidebar .sb-danger { color: #f87171 !important; }
+    #sidebar .sb-danger:hover { background: rgba(248,113,113,0.2) !important; color: #fca5a5 !important; }
+    #sidebar .sb-admin  { color: #94a3b8 !important; }
+    #sidebar .sb-admin:hover { background: rgba(148,163,184,0.15) !important; color: #e2e8f0 !important; }
+    #sidebar .sb-logout { color: #f87171 !important; }
+    #sidebar .sb-logout:hover { background: rgba(248,113,113,0.15) !important; color: #fca5a5 !important; }
+    #sidebar .sb-theme  { color: #fbbf24 !important; }
+    #sidebar .sb-theme:hover { background: rgba(251,191,36,0.15) !important; color: #fcd34d !important; }
     .sb-spacer { flex: 1; }
     body { margin-left: 60px; }
     @media (max-width: 640px) { #sidebar { display: none; } body { margin-left: 0; } }

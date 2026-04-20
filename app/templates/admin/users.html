@@ -38,9 +38,9 @@
       <div>
         <label>Perfil</label>
         <select name="role">
-          <option value="colaborador" selected>colaborador</option>
-          <option value="gestor">gestor</option>
-          <option value="admin">admin</option>
+          <option value="colaborador" selected>Colaborador</option>
+          <option value="gestor">Gestor</option>
+          <option value="admin">Admin</option>
         </select>
       </div>
       <div>
@@ -101,9 +101,9 @@
             </td>
             <td>
               <select name="user_{{ user.id }}_role">
-                <option value="colaborador" {% if user.role == 'colaborador' %}selected{% endif %}>colaborador</option>
-                <option value="gestor" {% if user.role == 'gestor' %}selected{% endif %}>gestor</option>
-                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+                <option value="colaborador" {% if user.role == 'colaborador' %}selected{% endif %}>Colaborador</option>
+                <option value="gestor" {% if user.role == 'gestor' %}selected{% endif %}>Gestor</option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>Admin</option>
               </select>
             </td>
             <td>

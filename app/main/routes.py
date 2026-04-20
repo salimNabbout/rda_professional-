@@ -271,7 +271,8 @@ def stats_mes_atual(mes_str: str = None):
 
     total_min = sum(por_projeto.values())
 
-    pdi_min = sum(_minutos_registro(r) for r in records if (r.realizado or "") == "PDI")
+    pdi_min  = sum(_minutos_registro(r) for r in records if (r.realizado or "") == "PDI")
+    pand_min = sum(_minutos_registro(r) for r in records if (r.realizado or "") == "P&D")
 
     # Para o gráfico de horas por projeto, remove o sufixo " / CTRL Nº"
     # e deixa somente o nome do cliente.
@@ -289,6 +290,8 @@ def stats_mes_atual(mes_str: str = None):
         "total_horas_pdi": f"{pdi_min // 60:02d}:{pdi_min % 60:02d}",
         "pdi_horas_decimal": round(pdi_min / 60, 2),
         "pdi_meta_minima": 20,
+        "total_horas_pand": f"{pand_min // 60:02d}:{pand_min % 60:02d}",
+        "pand_horas_decimal": round(pand_min / 60, 2),
     }
 
 

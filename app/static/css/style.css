@@ -253,6 +253,7 @@ th { background: #f8fafc; }
 [data-theme="dark"] [style*="background:#fef3c7"],
 [data-theme="dark"] [style*="background:#fee2e2"],
 [data-theme="dark"] [style*="background:#dcfce7"],
+[data-theme="dark"] [style*="background:#f0fdf4"][style*="border-left:4px solid #16a34a"] { background: #14532d !important; color: #bbf7d0 !important; }
 [data-theme="dark"] [style*="background:#f0fdf4"],
 [data-theme="dark"] [style*="background:#f1f5f9"] {
   background: #1e293b !important;

@@ -4,7 +4,7 @@ from flask_login import login_required, current_user
 from sqlalchemy import func
 from app.permissions import roles_required
 from app.extensions import db
-from app.models import User, RDAAuditLog
+from app.models import User, RDAAuditLog, RDARecord
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/admin")
 
@@ -183,4 +183,40 @@ def delete_user(user_id: int):
         )
     else:
         flash(f"Usuário '{nome}' excluído.", "success")
+    return redirect(url_for("admin.users"))
+
+
+@admin_bp.route("/limpar-dados", methods=["POST"])
+@login_required
+@roles_required("admin")
+def limpar_dados():
+    """Limpeza seletiva de dados — apenas admin."""
+    confirmacao = request.form.get("confirmacao", "").strip()
+    if confirmacao != "CONFIRMAR":
+        flash("Confirmação inválida. Digite CONFIRMAR exatamente.", "error")
+        return redirect(url_for("admin.users"))
+
+    apagar_rda     = request.form.get("apagar_rda")     == "1"
+    apagar_logs    = request.form.get("apagar_logs")    == "1"
+
+    total_rda  = 0
+    total_logs = 0
+
+    if apagar_rda:
+        total_rda = RDARecord.query.delete(synchronize_session=False)
+
+    if apagar_logs:
+        total_logs = RDAAuditLog.query.delete(synchronize_session=False)
+
+    db.session.commit()
+
+    partes = []
+    if apagar_rda:   partes.append(f"{total_rda} registro(s) RDA")
+    if apagar_logs:  partes.append(f"{total_logs} log(s) de auditoria")
+
+    if partes:
+        flash(f"Limpeza concluída: {', '.join(partes)} removido(s).", "success")
+    else:
+        flash("Nenhuma opção selecionada — nada foi apagado.", "error")
+
     return redirect(url_for("admin.users"))

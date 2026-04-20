@@ -62,20 +62,20 @@
     </div>
     {% set pdi_abaixo = stats.pdi_horas_decimal < stats.pdi_meta_minima %}
     <div class="summary" style="flex-direction:column; align-items:flex-start; background:#eef3ff; border-left:4px solid #3e63dd;">
-      <span>Horas PDI no mês</span>
-      <strong style="font-size:28px; text-transform:uppercase; font-weight:900; letter-spacing:1px; color:{% if pdi_abaixo %}#dc2626{% else %}#16a34a{% endif %};">{{ stats.total_horas_pdi }}</strong>
+      <span>PDI &amp; P&amp;D no mês</span>
+      <div style="display:flex; gap:16px; align-items:baseline; flex-wrap:wrap;">
+        <div>
+          <span style="font-size:10px; font-weight:700; color:#3e63dd; text-transform:uppercase; letter-spacing:0.5px;">PDI</span>
+          <strong style="font-size:24px; font-weight:900; display:block; color:{% if pdi_abaixo %}#dc2626{% else %}#16a34a{% endif %};">{{ stats.total_horas_pdi }}</strong>
+        </div>
+        <div style="width:1px; height:36px; background:#cbd5e1; align-self:center;"></div>
+        <div>
+          <span style="font-size:10px; font-weight:700; color:#3e63dd; text-transform:uppercase; letter-spacing:0.5px;">P&amp;D</span>
+          <strong style="font-size:24px; font-weight:900; display:block; color:{% if stats.pand_horas_decimal > 0 %}#16a34a{% else %}#64748b{% endif %};">{{ stats.total_horas_pand }}</strong>
+        </div>
+      </div>
       <span style="font-size:11px; font-weight:700; text-transform:uppercase; margin-top:4px; color:{% if pdi_abaixo %}#dc2626{% else %}#16a34a{% endif %};">
-        {% if pdi_abaixo %}Abaixo da meta mínima de {{ stats.pdi_meta_minima }}h{% else %}Meta de {{ stats.pdi_meta_minima }}h atingida{% endif %}
-      </span>
-    </div>
-  </div>
-
-  <div class="grid grid-4" style="margin-top:12px;">
-    <div class="summary" style="flex-direction:column; align-items:flex-start; background:#f0fdf4; border-left:4px solid #16a34a; grid-column: 4;">
-      <span>Horas P&amp;D no mês</span>
-      <strong style="font-size:28px; text-transform:uppercase; font-weight:900; letter-spacing:1px; color:{% if stats.pand_horas_decimal > 0 %}#16a34a{% else %}#64748b{% endif %};">{{ stats.total_horas_pand }}</strong>
-      <span style="font-size:11px; font-weight:700; text-transform:uppercase; margin-top:4px; color:{% if stats.pand_horas_decimal > 0 %}#16a34a{% else %}#64748b{% endif %};">
-        {% if stats.pand_horas_decimal > 0 %}Pesquisa &amp; Desenvolvimento{% else %}Nenhum lançamento{% endif %}
+        {% if pdi_abaixo %}PDI abaixo da meta de {{ stats.pdi_meta_minima }}h{% else %}Meta PDI de {{ stats.pdi_meta_minima }}h atingida{% endif %}
       </span>
     </div>
   </div>

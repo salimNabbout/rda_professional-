@@ -22,6 +22,75 @@
   </script>
 </head>
 <body>
+  {% if current_user.is_authenticated %}
+  {% import '_icons.html' as icons %}
+  <nav id="sidebar" aria-label="Navegação principal">
+    <div class="sb-logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+      <span>CETEM Flow</span>
+    </div>
+    <a class="sb-item sb-secondary" href="{{ url_for('main.index') }}" title="RDA">{{ icons.back() }}<span>RDA</span></a>
+    {% if current_user.acesso_tap or current_user.is_admin() %}
+    <a class="sb-item sb-primary" href="{{ url_for('tap.list_taps') }}" title="TAP">{{ icons.tap() }}<span>TAP</span></a>
+    {% endif %}
+    <a class="sb-item sb-primary" href="{{ url_for('main.performance') }}" title="Performance">{{ icons.performance() }}<span>Performance</span></a>
+    <a class="sb-item sb-primary" href="{{ url_for('main.performance_gantt') }}" title="Gantt">{{ icons.gantt() }}<span>Gantt</span></a>
+    {% if current_user.is_admin() %}
+    <a class="sb-item sb-primary" href="{{ url_for('main.predicao') }}" title="Predição">{{ icons.predicao() }}<span>Predição</span></a>
+    {% endif %}
+    {% if current_user.is_admin() or current_user.acesso_produtividade %}
+    <a class="sb-item sb-primary" href="{{ url_for('main.performance_colaboradores') }}" title="PDI">{{ icons.produtividade() }}<span>PDI</span></a>
+    {% endif %}
+    {% if current_user.is_admin() %}
+    <a class="sb-item sb-danger" href="{{ url_for('main.avaliacao') }}" title="Avaliação IA">{{ icons.avaliacao() }}<span>Avaliação IA</span></a>
+    <a class="sb-item sb-secondary" href="{{ url_for('admin.users') }}" title="Usuários">{{ icons.users() }}<span>Usuários</span></a>
+    <a class="sb-item sb-secondary" href="{{ url_for('admin.acessos') }}" title="Acessos">{{ icons.acessos() }}<span>Acessos</span></a>
+    {% endif %}
+    <div class="sb-spacer"></div>
+    <button type="button" class="sb-item sb-theme" onclick="toggleTheme()" title="Alternar tema">
+      <svg id="sbIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg id="sbIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <span>Tema</span>
+    </button>
+    <a class="sb-item sb-logout" href="{{ url_for('auth.logout') }}" title="Sair">{{ icons.logout() }}<span>Sair</span></a>
+  </nav>
+  <style>
+    #sidebar {
+      position: fixed; left: 0; top: 0; bottom: 0; z-index: 1000;
+      width: 60px; overflow: hidden;
+      background: linear-gradient(180deg, #0f4c81 0%, #0a3259 100%);
+      display: flex; flex-direction: column; align-items: stretch;
+      transition: width 0.22s ease;
+      box-shadow: 3px 0 16px rgba(0,0,0,0.18);
+    }
+    #sidebar:hover { width: 200px; }
+    .sb-logo { display: flex; align-items: center; gap: 10px; padding: 16px 14px 12px; border-bottom: 1px solid rgba(255,255,255,0.12); white-space: nowrap; overflow: hidden; min-height: 56px; }
+    .sb-logo svg { width: 28px; height: 28px; flex-shrink: 0; color: #fff; }
+    .sb-logo span { font-size: 13px; font-weight: 800; color: #fff; opacity: 0; transition: opacity 0.18s ease; }
+    #sidebar:hover .sb-logo span { opacity: 1; }
+    .sb-item { display: flex; align-items: center; gap: 12px; padding: 11px 16px; color: rgba(255,255,255,0.78); text-decoration: none; font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; cursor: pointer; background: transparent; border: none; text-align: left; transition: background 0.15s, color 0.15s; width: 100%; box-sizing: border-box; }
+    .sb-item svg { width: 22px; height: 22px; flex-shrink: 0; }
+    .sb-item span { opacity: 0; transition: opacity 0.18s ease; }
+    #sidebar:hover .sb-item span { opacity: 1; }
+    .sb-item:hover { background: rgba(255,255,255,0.14); color: #fff; }
+    /* Cores dos ícones por categoria */
+    .sb-primary { color: #93c5fd !important; }
+    .sb-primary:hover { background: rgba(59,130,246,0.2) !important; color: #bfdbfe !important; }
+    .sb-secondary { color: #cbd5e1 !important; }
+    .sb-secondary:hover { background: rgba(255,255,255,0.14) !important; color: #fff !important; }
+    .sb-success { color: #86efac !important; }
+    .sb-success:hover { background: rgba(22,163,74,0.2) !important; color: #bbf7d0 !important; }
+    .sb-danger { color: #fca5a5 !important; }
+    .sb-danger:hover { background: rgba(220,38,38,0.25) !important; color: #fecaca !important; }
+    .sb-logout { color: rgba(255,255,255,0.45) !important; }
+    .sb-logout:hover { background: rgba(220,38,38,0.2) !important; color: #fca5a5 !important; }
+    .sb-spacer { flex: 1; }
+    body { margin-left: 60px; }
+    @media (max-width: 640px) { #sidebar { display: none; } body { margin-left: 0; } }
+    @media print { #sidebar { display: none; } body { margin-left: 0; } }
+    [data-theme="dark"] #sidebar { background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%); }
+  </style>
+  {% endif %}
   <div class="container">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
@@ -54,11 +123,8 @@
       };
       function syncThemeIcon() {
         const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-        const sun = document.getElementById('themeIconSun');
-        const moon = document.getElementById('themeIconMoon');
-        if (!sun || !moon) return;
-        sun.style.display = isDark ? 'block' : 'none';
-        moon.style.display = isDark ? 'none' : 'block';
+        ['themeIconSun','sbIconSun'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isDark ? 'block' : 'none'; });
+        ['themeIconMoon','sbIconMoon'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = isDark ? 'none' : 'block'; });
       }
       syncThemeIcon();
     </script>

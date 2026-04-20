@@ -142,4 +142,40 @@
   </div>
   </form>
 </div>
+
+<div class="card" style="margin-top:20px; border:2px solid #dc2626;">
+  <h2 style="color:#dc2626; margin:0 0 8px;">⚠ Zona de perigo — Limpeza de dados</h2>
+  <p style="font-size:13px; color:#64748b; margin:0 0 16px;">Ações irreversíveis. Os dados apagados <strong>não poderão ser recuperados</strong>.</p>
+  <form method="post" action="{{ url_for('admin.limpar_dados') }}" onsubmit="return validarLimpeza(this);">
+    <div style="display:flex; flex-direction:column; gap:10px; margin-bottom:16px;">
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+        <input type="checkbox" name="apagar_rda" value="1" style="width:16px; height:16px; min-height:0;">
+        <span><strong>Apagar todos os registros RDA</strong> — remove todos os lançamentos de horas de todos os colaboradores</span>
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; font-size:13px; cursor:pointer;">
+        <input type="checkbox" name="apagar_logs" value="1" style="width:16px; height:16px; min-height:0;">
+        <span><strong>Apagar logs de auditoria</strong> — limpa o histórico de acessos e salvamentos</span>
+      </label>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:12px; font-weight:700; color:#dc2626;">Para confirmar, digite <code>CONFIRMAR</code> no campo abaixo:</label>
+      <input type="text" name="confirmacao" placeholder="CONFIRMAR" autocomplete="off"
+             style="margin-top:6px; max-width:220px; border:2px solid #dc2626; color:#dc2626; font-weight:700; letter-spacing:1px;">
+    </div>
+    <button type="submit" class="btn btn-danger btn-icon-inline">
+      {{ icons.delete() }}<span>Executar limpeza</span>
+    </button>
+  </form>
+</div>
+
+<script>
+function validarLimpeza(form) {
+  const checks = form.querySelectorAll('input[type="checkbox"]:checked');
+  if (checks.length === 0) { alert('Selecione ao menos uma opção para limpar.'); return false; }
+  const conf = form.querySelector('input[name="confirmacao"]').value.trim();
+  if (conf !== 'CONFIRMAR') { alert('Digite CONFIRMAR exatamente para prosseguir.'); return false; }
+  const opcoes = Array.from(checks).map(c => c.closest('label').querySelector('strong').innerText).join('\n• ');
+  return confirm('⚠ ATENÇÃO — AÇÃO IRREVERSÍVEL\n\nVocê está prestes a apagar:\n• ' + opcoes + '\n\nEsta ação NÃO pode ser desfeita. Confirma?');
+}
+</script>
 {% endblock %}

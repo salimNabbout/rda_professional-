@@ -21,14 +21,9 @@
   <div class="card" style="margin-bottom:20px; background:#f0f9ff; border-left:4px solid #0f4c81;">
     <h2 style="margin:0 0 8px;">Numeração CTRL — Ano {{ ano_atual }}</h2>
     <p style="margin:0 0 12px; font-size:13px; color:#334155;">
-      Define o <strong>primeiro CTRL</strong> do ano. Os próximos TAPs seguirão a sequência automaticamente
-      até o final do ano ({{ ano_atual }}).
       {% if ctrl_base %}
-        Base atual: <strong>{{ ctrl_base }}/{{ ano_atual }}</strong>.
-      {% else %}
-        <em>Nenhuma base definida ainda.</em>
+        Base atual: <strong>{{ ctrl_base }}/{{ ano_atual }}</strong>. Próximo CTRL sugerido: <strong>{{ proximo }}</strong>.
       {% endif %}
-      Próximo CTRL sugerido: <strong>{{ proximo }}</strong>.
     </p>
     <form method="post" action="{{ url_for('tap.set_ctrl_base') }}" class="actions actions-inline" style="max-width:360px;">
       <input name="base_ctrl" placeholder="Ex: 2577/26" value="{{ (ctrl_base + '/' + ano_atual) if ctrl_base else '' }}" required style="flex:1;">

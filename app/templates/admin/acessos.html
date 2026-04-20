@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}Controle de Acesso{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Controle de Acesso</h1>
+      <p>Pilha de salvamentos do RDA por colaborador. Mostra data, hora e atividade de cada gravação.</p>
+    </div>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('admin.users') }}" title="Usuários" aria-label="Usuários">{{ icons.users() }}<span class="btn-label">Usuários</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <h2 style="margin:0;">Relógio / Calendário</h2>
+    <div id="relogioAgora" style="font-size:20px; font-weight:800; color:#0f4c81; letter-spacing:0.5px;">--/--/---- --:--:--</div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <form method="get" action="{{ url_for('admin.acessos') }}">
+    <h3 style="margin:0 0 12px;">Filtros</h3>
+    <div class="grid grid-4">
+      <div>
+        <label>Colaborador</label>
+        <select name="f_user">
+          <option value="">Todos</option>
+          {% for u in usuarios %}
+            <option value="{{ u.id }}" {% if filtros.f_user == u.id|string %}selected{% endif %}>{{ u.display_name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label>Data início</label>
+        <input type="date" name="f_ini" value="{{ filtros.f_ini }}">
+      </div>
+      <div>
+        <label>Data fim</label>
+        <input type="date" name="f_fim" value="{{ filtros.f_fim }}">
+      </div>
+      <div style="display:flex; align-items:flex-end; gap:8px;">
+        <button type="submit" class="btn btn-primary btn-sm">Filtrar</button>
+        <a class="btn btn-secondary btn-sm" href="{{ url_for('admin.acessos') }}">Limpar</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <h3 style="margin:0 0 12px;">Resumo por dia</h3>
+  {% if calendario %}
+    <div class="table-wrap">
+      <table class="users-table">
+        <colgroup><col style="width:35%"><col style="width:20%"><col style="width:45%"></colgroup>
+        <thead>
+          <tr><th>Colaborador</th><th>Data</th><th>Qtde de salvamentos</th></tr>
+        </thead>
+        <tbody>
+          {% for c in calendario %}
+            <tr>
+              <td style="text-align:left;">{{ c.user_display }}</td>
+              <td>{{ c.dia[8:10] }}/{{ c.dia[5:7] }}/{{ c.dia[0:4] }}</td>
+              <td>
+                <div style="position:relative; height:18px; background:#e5e7eb; border-radius:9px; overflow:hidden; max-width:280px; margin:0 auto;">
+                  <div style="position:absolute; left:0; top:0; bottom:0; width:{{ [c.qtd*10, 100]|min }}%; background:#0f4c81;"></div>
+                  <span style="position:relative; display:block; text-align:center; font-size:11px; font-weight:700; line-height:18px; color:#fff;">{{ c.qtd }}</span>
+                </div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">Sem salvamentos registrados para o filtro atual.</div>
+  {% endif %}
+</div>
+
+<div class="card">
+  <h3 style="margin:0 0 12px;">Pilha de salvamentos (últimos 500)</h3>
+  {% if logs %}
+    <div class="table-wrap">
+      <table class="users-table">
+        <colgroup>
+          <col style="width:15%">
+          <col style="width:18%">
+          <col style="width:10%">
+          <col style="width:47%">
+          <col style="width:10%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Data / Hora</th>
+            <th>Colaborador</th>
+            <th>Ação</th>
+            <th>Atividade</th>
+            <th>Registro ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+            <tr>
+              <td><strong>{{ (log.ts|brt).strftime('%d/%m/%Y %H:%M:%S') }}</strong></td>
+              <td style="text-align:left;">{{ log.user_display }}</td>
+              <td>
+                {% if log.action == 'criar' %}
+                  <span class="status concluido">Criar</span>
+                {% elif log.action == 'editar' %}
+                  <span class="status em-andamento">Editar</span>
+                {% elif log.action == 'excluir' %}
+                  <span class="status atrasado">Excluir</span>
+                {% else %}
+                  {{ log.action }}
+                {% endif %}
+              </td>
+              <td style="text-align:left; font-size:11px;">{{ log.resumo }}</td>
+              <td>{{ log.record_id or '—' }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty">Sem registros na pilha de salvamentos. Salvamentos feitos a partir de agora serão contabilizados.</div>
+  {% endif %}
+</div>
+
+<script>
+  (function () {
+    const el = document.getElementById('relogioAgora');
+    if (!el) return;
+    function tick() {
+      const d = new Date();
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const aa = d.getFullYear();
+      const h = String(d.getHours()).padStart(2, '0');
+      const m = String(d.getMinutes()).padStart(2, '0');
+      const s = String(d.getSeconds()).padStart(2, '0');
+      el.textContent = `${dd}/${mm}/${aa}  ${h}:${m}:${s}`;
+    }
+    tick();
+    setInterval(tick, 1000);
+  })();
+</script>
+{% endblock %}

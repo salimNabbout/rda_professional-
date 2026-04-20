@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import '_icons.html' as icons %}
 {% block title %}Dashboard RDA{% endblock %}
 {% block content %}
 <div class="banner">
@@ -7,27 +8,46 @@
       <h1>RDA - Relatório Diário de Atividade</h1>
       <p>Olá, {{ current_user.username }}. Perfil atual: <strong>{{ current_user.role }}</strong>.</p>
     </div>
-    <div class="actions">
-      <a class="btn btn-success" href="{{ url_for('main.export_csv', **filters) }}">Exportar CSV</a>
-      <a class="btn btn-success" href="{{ url_for('main.export_pdf', **filters) }}">Exportar PDF</a>
-      <a class="btn btn-secondary" href="{{ url_for('main.api_records', **filters) }}">API JSON</a>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-success" href="{{ url_for('main.export_csv', **filters) }}" title="Exportar CSV" aria-label="Exportar CSV">{{ icons.csv() }}<span class="btn-label">CSV</span></a>
+      <a class="btn btn-icon btn-success" href="{{ url_for('main.export_pdf', **filters) }}" title="Exportar PDF" aria-label="Exportar PDF">{{ icons.pdf() }}<span class="btn-label">PDF</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.api_records', **filters) }}" title="API JSON" aria-label="API JSON">{{ icons.json() }}<span class="btn-label">API</span></a>
       {% if current_user.acesso_tap or current_user.is_admin() %}
-        <a class="btn btn-primary" href="{{ url_for('tap.list_taps') }}">TAP</a>
+        <a class="btn btn-icon btn-primary" href="{{ url_for('tap.list_taps') }}" title="TAP" aria-label="TAP">{{ icons.tap() }}<span class="btn-label">TAP</span></a>
+      {% endif %}
+      <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance') }}" title="Performance" aria-label="Performance">{{ icons.performance() }}<span class="btn-label">Performance</span></a>
+      {% if current_user.is_admin() %}
+        <a class="btn btn-icon btn-primary" href="{{ url_for('main.predicao') }}" title="Predição de Capacidade" aria-label="Predição">{{ icons.predicao() }}<span class="btn-label">Predição</span></a>
+        <a class="btn btn-icon btn-primary" href="{{ url_for('main.avaliacao') }}" title="Avaliação IA (Experimental)" aria-label="Avaliação IA" style="color:#dc2626;">{{ icons.avaliacao() }}<span class="btn-label" style="color:#dc2626;">Avaliação</span></a>
+      {% endif %}
+      <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance_gantt') }}" title="Cronograma Gantt" aria-label="Gantt">{{ icons.gantt() }}<span class="btn-label">Gantt</span></a>
+      {% if current_user.is_admin() or current_user.acesso_produtividade %}
+        <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance_colaboradores') }}" title="PDI — Programa de Desenvolvimento Individual" aria-label="PDI">{{ icons.produtividade() }}<span class="btn-label">PDI</span></a>
       {% endif %}
       {% if current_user.role == 'admin' %}
-        <a class="btn btn-secondary" href="{{ url_for('admin.users') }}">Usuários</a>
+        <a class="btn btn-icon btn-secondary" href="{{ url_for('admin.users') }}" title="Usuários" aria-label="Usuários">{{ icons.users() }}<span class="btn-label">Usuários</span></a>
+        <a class="btn btn-icon btn-secondary" href="{{ url_for('admin.acessos') }}" title="Controle de Acesso" aria-label="Controle de Acesso">{{ icons.acessos() }}<span class="btn-label">Acessos</span></a>
       {% endif %}
-      <a class="btn btn-secondary" href="{{ url_for('auth.logout') }}">Sair</a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('auth.logout') }}" title="Sair" aria-label="Sair">{{ icons.logout() }}<span class="btn-label">Sair</span></a>
     </div>
   </div>
 </div>
 
 <div class="card" style="margin-bottom:20px;">
-  <div style="display:flex; justify-content:space-between; align-items:baseline; flex-wrap:wrap; gap:12px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
     <h2 style="margin:0;">Dashboard — mês {{ stats.mes_label }}</h2>
-    <div style="font-size:13px; color:#6b7a99;">Contagem reinicia todo início de mês.</div>
+    <form method="get" action="{{ url_for('main.index') }}" style="display:flex; align-items:center; gap:8px; margin:0;">
+      <label for="mesDashboard" style="margin:0; font-size:12px; color:#334155;">Selecionar mês:</label>
+      <select id="mesDashboard" name="mes" onchange="this.form.submit()" style="width:auto; min-width:140px; padding:6px 10px; font-size:13px;">
+        {% for m in meses_disponiveis or [] %}
+          {% set label = m[5:7] + '/' + m[0:4] %}
+          <option value="{{ m }}" {% if m == stats.mes_key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      <noscript><button type="submit" class="btn btn-secondary" style="padding:6px 10px; font-size:12px;">Ver</button></noscript>
+    </form>
   </div>
-  <div class="grid grid-3" style="margin-top:16px;">
+  <div class="grid grid-4" style="margin-top:16px;">
     <div class="summary" style="flex-direction:column; align-items:flex-start;">
       <span>Total de horas no mês</span>
       <strong style="font-size:28px;">{{ stats.total_horas_mes }}</strong>
@@ -40,25 +60,33 @@
       <span>Projetos ativos no mês</span>
       <strong style="font-size:28px;">{{ stats.labels_projeto | length }}</strong>
     </div>
+    {% set pdi_abaixo = stats.pdi_horas_decimal < stats.pdi_meta_minima %}
+    <div class="summary" style="flex-direction:column; align-items:flex-start; background:#eef3ff; border-left:4px solid #3e63dd;">
+      <span>Horas PDI no mês</span>
+      <strong style="font-size:28px; text-transform:uppercase; font-weight:900; letter-spacing:1px; color:{% if pdi_abaixo %}#dc2626{% else %}#16a34a{% endif %};">{{ stats.total_horas_pdi }}</strong>
+      <span style="font-size:11px; font-weight:700; text-transform:uppercase; margin-top:4px; color:{% if pdi_abaixo %}#dc2626{% else %}#16a34a{% endif %};">
+        {% if pdi_abaixo %}Abaixo da meta mínima de {{ stats.pdi_meta_minima }}h{% else %}Meta de {{ stats.pdi_meta_minima }}h atingida{% endif %}
+      </span>
+    </div>
   </div>
 
-  <h3 style="margin:20px 0 8px;">Projetos por status — mês {{ stats.mes_label }}</h3>
-  <p style="margin:0 0 10px; font-size:12px; color:#6b7a99;">Somatório dos 3 = Projetos ativos no mês ({{ stats.labels_projeto | length }}). Status de cada projeto = status do registro mais recente do mês.</p>
+  <h3 style="margin:20px 0 8px;">Tarefas por status — mês {{ stats.mes_label }}</h3>
+  <p style="margin:0 0 10px; font-size:12px; color:#6b7a99;">Contagem por atividade (cliente + entregável). Concluída tem prioridade sobre Em Andamento. Atrasada permanece contabilizada mesmo após a conclusão.</p>
   <div class="grid grid-3">
     <div class="status-card amarelo">
       <span class="label">Em Andamento</span>
       <span class="count">{{ stats.por_status['Em Andamento'] }}</span>
-      <span class="hint">projetos em execução</span>
+      <span class="hint">tarefas em execução</span>
     </div>
     <div class="status-card verde">
       <span class="label">Concluída</span>
       <span class="count">{{ stats.por_status['Concluído'] }}</span>
-      <span class="hint">projetos finalizados</span>
+      <span class="hint">tarefas finalizadas</span>
     </div>
     <div class="status-card vermelho">
       <span class="label">Atrasada</span>
       <span class="count">{{ stats.por_status['Atrasado'] }}</span>
-      <span class="hint">projetos em atraso</span>
+      <span class="hint">tarefas em atraso (permanece após conclusão)</span>
     </div>
   </div>
   <div class="grid grid-2" style="margin-top:20px;">
@@ -73,29 +101,61 @@
   </div>
 </div>
 
-<div class="layout">
-  <div class="card">
-    <h2>{{ 'Editar Registro' if editing else 'Novo Registro' }}</h2>
-    {% include 'main/_form.html' %}
-  </div>
+<div class="card" style="margin-bottom:20px;">
+  <h2>{{ 'Editar Registro' if editing else 'Novo Registro' }}</h2>
+  {% include 'main/_form.html' %}
+</div>
 
-  <div class="card">
-    <h2>Relatórios cadastrados</h2>
+<div class="card">
+  <h2>Relatórios cadastrados</h2>
 
     <form method="get" action="{{ url_for('main.index') }}" class="card" style="margin-bottom:16px; background:#f8fbff;">
       <h3>Filtros</h3>
-      <div class="grid grid-3">
+      <div class="grid grid-5">
         <div>
           <label>Data</label>
           <input type="date" name="f_data" value="{{ filters.f_data }}">
         </div>
         <div>
           <label>Cliente</label>
-          <input name="f_cliente" value="{{ filters.f_cliente }}">
+          <input name="f_cliente" value="{{ filters.f_cliente }}" list="clientesFiltro" placeholder="Selecione um projeto ou digite">
+          <datalist id="clientesFiltro">
+            {% for c in clientes_tap or [] %}
+              <option value="{{ c }}"></option>
+            {% endfor %}
+          </datalist>
         </div>
         <div>
           <label>Colaborador</label>
-          <input name="f_colaborador" value="{{ filters.f_colaborador }}">
+          {% if current_user.role == 'colaborador' %}
+            <input name="f_colaborador" value="{{ current_user.display_name }}" readonly style="background:#f1f5f9; cursor:not-allowed;">
+          {% else %}
+            <input name="f_colaborador" value="{{ filters.f_colaborador }}" list="colaboradoresFiltro" placeholder="Selecione ou digite">
+            <datalist id="colaboradoresFiltro">
+              {% for c in colaboradores_tap or [] %}
+                <option value="{{ c }}"></option>
+              {% endfor %}
+            </datalist>
+          {% endif %}
+        </div>
+        <div>
+          <label>Atividade</label>
+          <input name="f_atividade" value="{{ filters.f_atividade }}" list="atividadesFiltro" placeholder="Ex: PDI, Projetos, Treinamento">
+          <datalist id="atividadesFiltro">
+            {% for a in entregaveis_default or [] %}
+              <option value="{{ a }}"></option>
+            {% endfor %}
+            <option value="PDI"></option>
+          </datalist>
+        </div>
+        <div>
+          <label>Status</label>
+          <select name="f_status">
+            <option value="" {% if not filters.f_status %}selected{% endif %}>Todos</option>
+            {% for s in ['Em Andamento', 'Concluído', 'Atrasado'] %}
+              <option value="{{ s }}" {% if filters.f_status == s %}selected{% endif %}>{{ s }}</option>
+            {% endfor %}
+          </select>
         </div>
       </div>
       <div class="actions" style="margin-top:16px;">
@@ -109,21 +169,31 @@
 
     {% if records %}
       <div class="table-wrap">
-        <table>
+        <table class="rda-table">
+          <colgroup>
+            <col style="width:12%">
+            <col style="width:15%">
+            <col style="width:8%">
+            <col style="width:6%">
+            <col style="width:6%">
+            <col style="width:6%">
+            <col style="width:6%">
+            <col style="width:6%">
+            <col style="width:14%">
+            <col style="width:9%">
+            <col style="width:12%">
+          </colgroup>
           <thead>
             <tr>
-              {% if current_user.role in ['gestor', 'admin'] %}
-                <th>Dono</th>
-              {% endif %}
               <th>Colaborador</th>
               <th>Cliente</th>
               <th>Data</th>
-              <th>Manhã Ini</th>
-              <th>Manhã Fim</th>
-              <th>Tarde Ini</th>
-              <th>Tarde Fim</th>
+              <th>Manhã<br>Início</th>
+              <th>Manhã<br>Final</th>
+              <th>Tarde<br>Início</th>
+              <th>Tarde<br>Final</th>
               <th>Duração</th>
-              <th>Realizado</th>
+              <th>Atividade</th>
               <th>Status</th>
               <th>Ações</th>
             </tr>
@@ -131,9 +201,6 @@
           <tbody>
             {% for item in records %}
               <tr>
-                {% if current_user.role in ['gestor', 'admin'] %}
-                  <td>{{ item.owner.username if item.owner else '-' }}</td>
-                {% endif %}
                 <td><strong>{{ item.colaborador }}</strong></td>
                 <td>{{ item.cliente }}</td>
                 <td>{{ formatar_data_br(item.data) }}</td>
@@ -148,10 +215,10 @@
                   <span class="status {{ cls }}">{{ item.status_rda }}</span>
                 </td>
                 <td>
-                  <div class="actions">
-                    <a class="btn btn-warning" href="{{ url_for('main.edit_record', record_id=item.id) }}">Editar</a>
+                  <div class="actions actions-compact">
+                    <a class="btn btn-warning btn-sm btn-icon-inline" href="{{ url_for('main.edit_record', record_id=item.id) }}" title="Editar" aria-label="Editar">{{ icons.edit() }}<span>Editar</span></a>
                     <form method="post" action="{{ url_for('main.delete_record', record_id=item.id) }}" onsubmit="return confirm('Excluir este registro?');">
-                      <button class="btn btn-danger" type="submit">Excluir</button>
+                      <button class="btn btn-danger btn-sm btn-icon-inline" type="submit" title="Excluir" aria-label="Excluir">{{ icons.delete() }}<span>Excluir</span></button>
                     </form>
                   </div>
                 </td>
@@ -163,7 +230,6 @@
     {% else %}
       <div class="empty">Nenhum registro encontrado.</div>
     {% endif %}
-  </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -174,6 +240,10 @@
   const mesLabel = {{ stats.mes_label | tojson }};
 
   if (labelsProjeto.length > 0) {
+    const paletaProjetos = ['#3e63dd', '#10b981', '#f59e0b', '#8b5cf6', '#06b6d4'];
+    const coresBarras = labelsProjeto.map(function (_, i) {
+      return paletaProjetos[i % paletaProjetos.length];
+    });
     new Chart(document.getElementById('chartProjeto'), {
       type: 'bar',
       data: {
@@ -181,7 +251,7 @@
         datasets: [{
           label: 'Horas',
           data: horasProjeto,
-          backgroundColor: '#3e63dd',
+          backgroundColor: coresBarras,
         }],
       },
       options: {
@@ -194,20 +264,36 @@
     document.getElementById('chartProjeto').replaceWith(Object.assign(document.createElement('div'), { className: 'empty', innerText: 'Sem dados no mês corrente.' }));
   }
 
+  const horasLegaisMes = 176;
+  const horasRegistradas = Math.min(totalHorasMes, horasLegaisMes);
+  const horasRestantes = Math.max(0, horasLegaisMes - totalHorasMes);
+
   new Chart(document.getElementById('chartTotal'), {
     type: 'doughnut',
     data: {
-      labels: ['Horas trabalhadas — ' + mesLabel],
+      labels: ['Registradas pelo colaborador', 'Restante (até 176h legais)'],
       datasets: [{
-        data: [totalHorasMes || 0.0001],
-        backgroundColor: ['#22c55e'],
+        data: [horasRegistradas || 0.0001, horasRestantes],
+        backgroundColor: ['#22c55e', '#e2e8f0'],
+        borderWidth: 1,
       }],
     },
     options: {
       responsive: true,
       plugins: {
         legend: { position: 'bottom' },
-        tooltip: { callbacks: { label: (ctx) => ctx.label + ': ' + totalHorasMes.toFixed(2) + 'h' } },
+        title: {
+          display: true,
+          text: 'Trabalhado: ' + totalHorasMes.toFixed(2) + 'h de ' + horasLegaisMes + 'h — ' + mesLabel,
+        },
+        tooltip: {
+          callbacks: {
+            label: function (ctx) {
+              const valor = ctx.dataIndex === 0 ? totalHorasMes : horasRestantes;
+              return ctx.label + ': ' + valor.toFixed(2) + 'h';
+            },
+          },
+        },
       },
     },
   });

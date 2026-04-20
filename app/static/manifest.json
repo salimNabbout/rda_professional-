@@ -1,0 +1,39 @@
+{
+  "name": "CETEM Flow",
+  "short_name": "CETEM Flow",
+  "description": "Gestão de projetos, RDA e desempenho CETEM Tecnologia",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0f172a",
+  "theme_color": "#0f4c81",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Novo Registro RDA",
+      "short_name": "Novo RDA",
+      "url": "/",
+      "description": "Acessar formulário de registro diário"
+    },
+    {
+      "name": "Performance",
+      "short_name": "Performance",
+      "url": "/performance",
+      "description": "Ver performance dos projetos"
+    }
+  ]
+}

@@ -7,7 +7,62 @@ from flask import Blueprint, render_template, request, redirect, url_for, flash,
 from flask_login import login_required, current_user
 
 from app.extensions import db
-from app.models import TAP, TAPItem, TAP_ENTREGAVEIS, TAP_STATUS_CHOICES
+from app.models import TAP, TAPItem, TAP_ENTREGAVEIS, TAP_STATUS_CHOICES, RDARecord, AppSetting
+
+
+def _ano_suffix_atual() -> str:
+    return datetime.utcnow().strftime("%y")
+
+
+def _get_setting(chave: str) -> str:
+    s = AppSetting.query.filter_by(chave=chave).first()
+    return s.valor if s else ""
+
+
+def _set_setting(chave: str, valor: str) -> None:
+    s = AppSetting.query.filter_by(chave=chave).first()
+    if s:
+        s.valor = valor
+    else:
+        db.session.add(AppSetting(chave=chave, valor=valor))
+    db.session.commit()
+
+
+def _parse_ctrl(ctrl: str):
+    """Separa 'NNNN/AA' em (numero_int, ano_str). Retorna (None, None) se inválido."""
+    if not ctrl or "/" not in ctrl:
+        return None, None
+    partes = ctrl.strip().split("/")
+    if len(partes) != 2:
+        return None, None
+    try:
+        return int(partes[0]), partes[1].strip()
+    except ValueError:
+        return None, None
+
+
+def proximo_ctrl() -> str:
+    """Calcula o próximo CTRL no formato NNNN/AA.
+    Regra:
+    - Ano = ano corrente (2 dígitos).
+    - Número = MAX(números dos TAPs existentes com o mesmo ano) + 1.
+    - Se não houver TAP no ano corrente, usa a base configurada para o ano
+      (setting 'ctrl_base_{AA}'); se também não houver, cai para 1.
+    """
+    ano = _ano_suffix_atual()
+    max_num = 0
+    for tap in TAP.query.all():
+        n, a = _parse_ctrl(tap.ctrl_numero)
+        if n is not None and a == ano and n > max_num:
+            max_num = n
+    if max_num == 0:
+        base = _get_setting(f"ctrl_base_{ano}")
+        if base:
+            try:
+                max_num = max(0, int(base) - 1)
+            except ValueError:
+                pass
+    return f"{max_num + 1}/{ano}"
 
 
 tap_bp = Blueprint("tap", __name__, url_prefix="/tap")
@@ -44,7 +99,32 @@ def _inicializar_itens(tap: TAP):
 @tap_access_required
 def list_taps():
     taps = TAP.query.order_by(TAP.created_at.desc()).all()
-    return render_template("tap/list.html", taps=taps)
+    ano = _ano_suffix_atual()
+    ctrl_base = _get_setting(f"ctrl_base_{ano}")
+    return render_template(
+        "tap/list.html",
+        taps=taps,
+        ano_atual=ano,
+        ctrl_base=ctrl_base,
+        proximo=proximo_ctrl(),
+    )
+
+
+@tap_bp.route("/ctrl-base", methods=["POST"])
+@tap_access_required
+def set_ctrl_base():
+    """Somente admin pode definir o primeiro CTRL da numeração do ano."""
+    if not current_user.is_admin():
+        flash("Apenas administradores podem alterar a numeração base.", "error")
+        return redirect(url_for("tap.list_taps"))
+    base_ctrl = request.form.get("base_ctrl", "").strip()
+    n, a = _parse_ctrl(base_ctrl)
+    if n is None or not a:
+        flash("Informe um CTRL válido no formato NNNN/AA (ex: 2577/26).", "error")
+        return redirect(url_for("tap.list_taps"))
+    _set_setting(f"ctrl_base_{a}", str(n))
+    flash(f"Numeração base definida: {n}/{a}. Próximo sugerido: {proximo_ctrl()}.", "success")
+    return redirect(url_for("tap.list_taps"))
 
 
 @tap_bp.route("/novo", methods=["GET", "POST"])
@@ -54,7 +134,7 @@ def novo():
         return _salvar(None)
     # prepara uma TAP em memória só para renderizar o form com 15 linhas vazias
     tap_stub = TAP(
-        ctrl_numero="", cliente="", status_proposta="Aguardando",
+        ctrl_numero=proximo_ctrl(), cliente="", status_proposta="Aguardando",
         hh_valor=300.0, created_by_id=current_user.id,
     )
     _inicializar_itens(tap_stub)
@@ -103,30 +183,64 @@ def _salvar(tap: TAP | None):
 
     # Atualiza os 15 itens a partir dos campos do form.
     # % vem do UI em 0..100 (ex: 10 = 10%) e é armazenada como decimal (0.1).
+    def _parse_data(valor: str):
+        valor = (valor or "").strip()
+        if not valor:
+            return None
+        try:
+            datetime.strptime(valor, "%Y-%m-%d")
+            return valor
+        except ValueError:
+            return None
+
     itens_por_ordem = {i.ordem: i for i in tap.itens}
     for ordem in range(1, len(TAP_ENTREGAVEIS) + 1):
         qtd = _parse_float(request.form.get(f"item_{ordem}_qtd"))
         tempo = _parse_float(request.form.get(f"item_{ordem}_tempo"))
         pct_ui = _parse_float(request.form.get(f"item_{ordem}_pct"))
+        inicio = _parse_data(request.form.get(f"item_{ordem}_inicio"))
+        fim = _parse_data(request.form.get(f"item_{ordem}_fim"))
         item = itens_por_ordem.get(ordem)
         if not item:
             continue
         item.qtd_recursos = qtd
         item.tempo = tempo
         item.percentual_correcao = pct_ui / 100.0
+        item.inicio_atividade = inicio
+        item.fim_atividade = fim
 
     db.session.commit()
     flash("TAP salva com sucesso.", "success")
-    return redirect(url_for("tap.editar", tap_id=tap.id))
+    return redirect(url_for("tap.list_taps"))
 
 
 @tap_bp.route("/<int:tap_id>/excluir", methods=["POST"])
 @tap_access_required
 def excluir(tap_id: int):
     tap = TAP.query.get_or_404(tap_id)
+    apagar_rda = request.form.get("apagar_rda") == "1"
+
+    # Vínculo por string: RDARecord.cliente == tap.rotulo_cliente ("Cliente / CTRL Nº").
+    qtd_rdas = RDARecord.query.filter_by(cliente=tap.rotulo_cliente).count()
+    if qtd_rdas > 0 and not apagar_rda:
+        flash(
+            f"Não é possível excluir a TAP '{tap.rotulo_cliente}': "
+            f"existem {qtd_rdas} registro(s) do RDA referenciando este projeto. "
+            f"Confirme a exclusão dos registros do RDA para prosseguir.",
+            "error",
+        )
+        return redirect(url_for("tap.list_taps"))
+
+    rotulo = tap.rotulo_cliente
+    if apagar_rda and qtd_rdas > 0:
+        RDARecord.query.filter_by(cliente=rotulo).delete(synchronize_session=False)
+
     db.session.delete(tap)
     db.session.commit()
-    flash("TAP excluída.", "success")
+    if apagar_rda and qtd_rdas > 0:
+        flash(f"TAP excluída e {qtd_rdas} registro(s) do RDA apagado(s).", "success")
+    else:
+        flash("TAP excluída.", "success")
     return redirect(url_for("tap.list_taps"))
 
 
@@ -236,7 +350,18 @@ def export_csv_detalhe(tap_id: int):
     writer.writerow(["Status da Proposta", tap.status_proposta])
     writer.writerow(["HH (R$)", f"{tap.hh_valor:.2f}".replace(".", ",")])
     writer.writerow([])
-    writer.writerow(["ID", "Entregável", "Qtd. Rec.", "Tempo (h)", "Valor Total (R$)", "% Correção", "Valor Corrigido (R$)"])
+    def _dd_mm_aa(iso):
+        if not iso:
+            return ""
+        try:
+            return datetime.strptime(iso, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except ValueError:
+            return iso
+
+    writer.writerow([
+        "ID", "Entregável", "Qtd. Rec.", "Tempo (h)", "Valor Total (R$)",
+        "% Correção", "Valor Corrigido (R$)", "Início Atividade", "Fim Atividade",
+    ])
     for it in tap.itens:
         writer.writerow([
             it.ordem, it.entregavel,
@@ -245,10 +370,12 @@ def export_csv_detalhe(tap_id: int):
             f"{it.valor_total:.2f}".replace(".", ","),
             f"{(it.percentual_correcao or 0) * 100:g}".replace(".", ",") + "%",
             f"{it.valor_total_corrigido:.2f}".replace(".", ","),
+            _dd_mm_aa(it.inicio_atividade),
+            _dd_mm_aa(it.fim_atividade),
         ])
     writer.writerow([])
-    writer.writerow(["", "", "", "TOTAL SEM CORREÇÃO", f"{tap.valor_total:.2f}".replace(".", ","), "", ""])
-    writer.writerow(["", "", "", "TOTAL COM CORREÇÃO", "", "", f"{tap.valor_total_corrigido:.2f}".replace(".", ",")])
+    writer.writerow(["", "", "", "TOTAL SEM CORREÇÃO", f"{tap.valor_total:.2f}".replace(".", ","), "", "", "", ""])
+    writer.writerow(["", "", "", "TOTAL COM CORREÇÃO", "", "", f"{tap.valor_total_corrigido:.2f}".replace(".", ","), "", ""])
 
     response = make_response("\ufeff" + output.getvalue())
     response.headers["Content-Type"] = "text/csv; charset=utf-8"
@@ -260,7 +387,7 @@ def export_csv_detalhe(tap_id: int):
 @tap_access_required
 def export_pdf_detalhe(tap_id: int):
     from reportlab.lib import colors
-    from reportlab.lib.pagesizes import A4
+    from reportlab.lib.pagesizes import A4, landscape
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
@@ -269,12 +396,20 @@ def export_pdf_detalhe(tap_id: int):
 
     buffer = BytesIO()
     doc = SimpleDocTemplate(
-        buffer, pagesize=A4,
-        leftMargin=12 * mm, rightMargin=12 * mm, topMargin=14 * mm, bottomMargin=14 * mm,
+        buffer, pagesize=landscape(A4),
+        leftMargin=10 * mm, rightMargin=10 * mm, topMargin=12 * mm, bottomMargin=12 * mm,
     )
     styles = getSampleStyleSheet()
     cell_style = ParagraphStyle("cell", parent=styles["BodyText"], fontSize=8, leading=10)
     head_style = ParagraphStyle("head", parent=styles["BodyText"], fontSize=8, textColor=colors.white, alignment=1)
+
+    def _dd_mm_aa(iso):
+        if not iso:
+            return ""
+        try:
+            return datetime.strptime(iso, "%Y-%m-%d").strftime("%d/%m/%Y")
+        except ValueError:
+            return iso
 
     titulo = Paragraph("<b>Termo de Abertura de Projeto (TAP)</b>", styles["Title"])
     cab = Paragraph(
@@ -286,7 +421,7 @@ def export_pdf_detalhe(tap_id: int):
         styles["Normal"],
     )
 
-    headers = ["ID", "Entregável", "Qtd", "Tempo", "Valor Total", "% Corr.", "Valor Corrigido"]
+    headers = ["ID", "Entregável", "Qtd", "Tempo", "Valor Total", "% Corr.", "Valor Corrigido", "Início Ativ.", "Fim Ativ."]
     data = [[Paragraph(h, head_style) for h in headers]]
     for it in tap.itens:
         data.append([
@@ -297,6 +432,8 @@ def export_pdf_detalhe(tap_id: int):
             Paragraph(_fmt_brl(it.valor_total), cell_style),
             Paragraph(f"{(it.percentual_correcao or 0) * 100:g}%", cell_style),
             Paragraph(_fmt_brl(it.valor_total_corrigido), cell_style),
+            Paragraph(_dd_mm_aa(it.inicio_atividade), cell_style),
+            Paragraph(_dd_mm_aa(it.fim_atividade), cell_style),
         ])
     data.append([
         Paragraph("", cell_style), Paragraph("<b>Totais</b>", cell_style),
@@ -304,9 +441,11 @@ def export_pdf_detalhe(tap_id: int):
         Paragraph(f"<b>{_fmt_brl(tap.valor_total)}</b>", cell_style),
         Paragraph("", cell_style),
         Paragraph(f"<b>{_fmt_brl(tap.valor_total_corrigido)}</b>", cell_style),
+        Paragraph("", cell_style),
+        Paragraph("", cell_style),
     ])
 
-    col_widths = [10*mm, 70*mm, 14*mm, 16*mm, 30*mm, 16*mm, 30*mm]
+    col_widths = [10*mm, 80*mm, 15*mm, 15*mm, 32*mm, 15*mm, 32*mm, 28*mm, 28*mm]
     table = Table(data, colWidths=col_widths, repeatRows=1)
     table.setStyle(TableStyle([
         ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#1f2d5a")),

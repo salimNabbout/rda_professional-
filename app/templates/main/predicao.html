@@ -1,0 +1,194 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}Predição de Capacidade{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Predição de Capacidade</h1>
+      <p>Avalia se o escopo do TAP cabe no prazo planejado, considerando recursos × dias úteis × {{ premissas.horas_uteis_dia }}h/dia.</p>
+    </div>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-success" href="{{ url_for('main.predicao_export_xlsx') }}" title="Exportar Excel" aria-label="Exportar Excel">{{ icons.excel() }}<span class="btn-label">Excel</span></a>
+      <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance') }}" title="Performance" aria-label="Performance">{{ icons.performance() }}<span class="btn-label">Performance</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <form method="get" action="{{ url_for('main.predicao') }}" style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0;">
+    <label for="f_projeto" style="margin:0; font-size:13px; color:#334155;"><strong>Projeto:</strong></label>
+    <select id="f_projeto" name="f_projeto" onchange="this.form.submit()" style="min-width:280px; padding:6px 10px; font-size:13px;">
+      <option value="">Todos os projetos</option>
+      {% for p in todos %}
+        <option value="{{ p.tap_id }}" {% if filtro_projeto == p.tap_id|string %}selected{% endif %}>{{ p.cliente }} — CTRL {{ p.ctrl_numero }}</option>
+      {% endfor %}
+    </select>
+    {% if filtro_projeto %}
+      <a class="btn btn-secondary" href="{{ url_for('main.predicao') }}" style="padding:6px 12px; font-size:12px;">Limpar</a>
+    {% endif %}
+    <noscript><button type="submit" class="btn btn-secondary" style="padding:6px 10px; font-size:12px;">Filtrar</button></noscript>
+  </form>
+</div>
+
+{% if projetos %}
+  <div class="card" style="margin-bottom:20px;">
+    <h2 style="margin:0 0 12px;">Roll-up por projeto</h2>
+    <div class="table-wrap">
+      <table class="perf-table">
+        <colgroup>
+          <col style="width:18%">
+          <col style="width:9%">
+          <col style="width:9%">
+          <col style="width:11%">
+          <col style="width:11%">
+          <col style="width:14%">
+          <col style="width:10%">
+          <col style="width:18%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Projeto</th>
+            <th>Atraso<br>Previsto</th>
+            <th>No<br>Limite</th>
+            <th>HH Extras<br>(h)</th>
+            <th>Custo<br>Adicional</th>
+            <th>Último Fim<br>Prev. / Plan.</th>
+            <th>Desvio<br>(d. úteis)</th>
+            <th>Risco / Leitura</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for p in projetos %}
+            {% set cor = '#dc2626' if p.risco == 'Crítico' else ('#d97706' if p.risco == 'Alto' else ('#f59e0b' if p.risco == 'Moderado' else '#16a34a')) %}
+            <tr>
+              <td style="text-align:left;">
+                <strong>{{ p.cliente }}</strong>
+                <div style="font-size:11px; color:#64748b;">CTRL {{ p.ctrl_numero }} · {{ p.status_tap }}</div>
+              </td>
+              <td><strong style="color:{% if p.atraso_previsto > 0 %}#dc2626{% else %}#16a34a{% endif %};">{{ p.atraso_previsto }}</strong></td>
+              <td><strong style="color:{% if p.no_limite > 0 %}#d97706{% else %}#16a34a{% endif %};">{{ p.no_limite }}</strong></td>
+              <td>{{ '%.1f'|format(p.hh_extras) }}</td>
+              <td>{{ p.custo_adicional | brl }}</td>
+              <td style="font-size:11px;">
+                {% if p.ultimo_fim_previsto %}
+                  {{ p.ultimo_fim_previsto[8:10] }}/{{ p.ultimo_fim_previsto[5:7] }}/{{ p.ultimo_fim_previsto[0:4] }}
+                {% else %}—{% endif %}
+                {% if p.ultimo_fim_planejado %}
+                  <br><span style="color:#64748b;">plan: {{ p.ultimo_fim_planejado[8:10] }}/{{ p.ultimo_fim_planejado[5:7] }}/{{ p.ultimo_fim_planejado[0:4] }}</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if p.desvio_dias is none %}
+                  <span style="color:#94a3b8;">—</span>
+                {% else %}
+                  <strong style="color:{% if p.desvio_dias > 0 %}#dc2626{% elif p.desvio_dias < 0 %}#16a34a{% else %}#64748b{% endif %};">
+                    {% if p.desvio_dias > 0 %}+{% endif %}{{ p.desvio_dias }}
+                  </strong>
+                {% endif %}
+              </td>
+              <td style="text-align:left;">
+                <span style="display:inline-block; padding:2px 10px; border-radius:999px; background:{{ cor }}; color:#fff; font-weight:700; font-size:10px; text-transform:uppercase;">{{ p.risco }}</span>
+                <div style="font-size:11px; color:#334155; margin-top:3px;">{{ p.leitura }}</div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 12px;">Detalhamento por entregável</h2>
+    {% for p in projetos %}
+      {% set cor = '#dc2626' if p.risco == 'Crítico' else ('#d97706' if p.risco == 'Alto' else ('#f59e0b' if p.risco == 'Moderado' else '#16a34a')) %}
+      <div style="margin-top:20px; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
+        <div style="padding:12px 16px; background:#f8fafc; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <strong style="font-size:16px;">{{ p.cliente }}</strong>
+            <span style="color:#64748b; font-size:13px;"> — CTRL {{ p.ctrl_numero }}</span>
+            <span style="display:inline-block; margin-left:8px; padding:2px 10px; border-radius:999px; background:{{ cor }}; color:#fff; font-weight:700; font-size:10px; text-transform:uppercase;">{{ p.risco }}</span>
+          </div>
+          <div style="font-size:12px; color:#334155;">
+            {{ p.entregaveis_ativos }} ativos · {{ p.base_completa }} completos · {{ p.base_parcial }} parciais
+          </div>
+        </div>
+        <div class="table-wrap" style="border:none; border-radius:0;">
+          <table class="perf-table">
+            <colgroup>
+              <col style="width:22%"><col style="width:6%"><col style="width:7%">
+              <col style="width:8%"><col style="width:8%"><col style="width:9%">
+              <col style="width:6%"><col style="width:10%"><col style="width:10%">
+              <col style="width:7%"><col style="width:11%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Entregável</th>
+                <th>Qtd</th>
+                <th>Tempo<br>(h)</th>
+                <th>HH<br>Escopo</th>
+                <th>Dias úteis<br>Planejados</th>
+                <th>Índice<br>Carga</th>
+                <th>Rec.<br>Mín.</th>
+                <th>Fim<br>Planejado</th>
+                <th>Fim<br>Previsto</th>
+                <th>Desvio<br>(d.u.)</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in p.itens %}
+                {% set st_cor = '#dc2626' if i.status_prazo == 'Atraso previsto' else ('#d97706' if i.status_prazo == 'No limite' else ('#16a34a' if i.status_prazo == 'Com folga' else '#64748b')) %}
+                <tr>
+                  <td style="text-align:left;">{{ i.entregavel }}</td>
+                  <td>{{ i.qtd_recursos }}</td>
+                  <td>{{ '%.1f'|format(i.tempo) }}</td>
+                  <td>{{ '%.1f'|format(i.hh_escopo) }}</td>
+                  <td>{% if i.dias_uteis_planejados is not none %}{{ i.dias_uteis_planejados }}{% else %}—{% endif %}</td>
+                  <td>
+                    {% if i.indice_carga is not none %}
+                      <strong style="color:{{ st_cor }};">{{ '%.2f'|format(i.indice_carga) }}</strong>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>{% if i.recursos_minimos is not none %}{{ i.recursos_minimos }}{% else %}—{% endif %}</td>
+                  <td style="font-size:11px;">
+                    {% if i.fim_planejado %}{{ i.fim_planejado[8:10] }}/{{ i.fim_planejado[5:7] }}/{{ i.fim_planejado[0:4] }}{% else %}<span style="color:#94a3b8;">—</span>{% endif %}
+                  </td>
+                  <td style="font-size:11px;">
+                    {% if i.fim_previsto %}{{ i.fim_previsto[8:10] }}/{{ i.fim_previsto[5:7] }}/{{ i.fim_previsto[0:4] }}{% else %}<span style="color:#94a3b8;">—</span>{% endif %}
+                  </td>
+                  <td>
+                    {% if i.desvio_dias is not none %}
+                      <strong style="color:{% if i.desvio_dias > 0 %}#dc2626{% elif i.desvio_dias < 0 %}#16a34a{% else %}#64748b{% endif %};">
+                        {% if i.desvio_dias > 0 %}+{% endif %}{{ i.desvio_dias }}
+                      </strong>
+                    {% else %}—{% endif %}
+                  </td>
+                  <td>
+                    <span style="display:inline-block; padding:2px 8px; border-radius:8px; background:{{ st_cor }}; color:#fff; font-weight:600; font-size:10px;">{{ i.status_prazo }}</span>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <div class="card" style="margin-top:20px;">
+    <h3 style="margin:0 0 8px;">Premissas do modelo</h3>
+    <ul style="margin:0; padding-left:20px; font-size:12px; color:#334155;">
+      <li><strong>Horas úteis por dia:</strong> {{ premissas.horas_uteis_dia }}h</li>
+      <li><strong>Limite "No limite":</strong> índice ≥ {{ '%.2f'|format(premissas.limite_no_limite) }} (acima, a carga já fica apertada).</li>
+      <li><strong>HH Escopo</strong> = qtd_recursos × tempo; <strong>Capacidade</strong> = qtd_recursos × dias_úteis × {{ premissas.horas_uteis_dia }}h; <strong>Índice de Carga</strong> = HH Escopo ÷ Capacidade.</li>
+      <li>Método determinístico — responde "o projeto cabe nesse prazo com esses recursos?", sem considerar o que já foi lançado no RDA.</li>
+    </ul>
+  </div>
+{% else %}
+  <div class="card">
+    <div class="empty">Nenhum TAP com entregáveis ativos. Preencha Qtd Recursos e Tempo na EAP para ver a predição.</div>
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}Performance — Previsto vs Realizado{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Performance — Previsto vs Realizado</h1>
+      <p>Horas orçadas no TAP comparadas com as horas registradas no RDA.</p>
+    </div>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance_gantt') }}" title="Cronograma Gantt" aria-label="Gantt">{{ icons.gantt() }}<span class="btn-label">Gantt</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <h2 style="margin:0 0 12px;">Indicadores gerais</h2>
+  <div class="grid grid-4">
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Projetos analisados</span>
+      <strong style="font-size:28px;">{{ total_projetos }}</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Horas previstas (TAP)</span>
+      <strong style="font-size:28px;">{{ '%.2f'|format(total_prev) }}h</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Horas realizadas (RDA)</span>
+      <strong style="font-size:28px;">{{ '%.2f'|format(total_real) }}h</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start; background:{% if total_risco > 0 %}#fef2f2{% else %}#f0fdf4{% endif %}; border-left:4px solid {% if total_risco > 0 %}#dc2626{% else %}#16a34a{% endif %};">
+      <span>% geral consumido</span>
+      <strong style="font-size:28px; color:{% if total_pct > 100 %}#dc2626{% elif total_pct >= 80 %}#d97706{% else %}#16a34a{% endif %};">{{ '%.1f'|format(total_pct) }}%</strong>
+      <span style="font-size:11px; color:#64748b; margin-top:4px;">{{ total_risco }} projeto(s) em risco</span>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <form method="get" action="{{ url_for('main.performance') }}">
+    <h3 style="margin:0 0 12px;">Filtros</h3>
+    <div class="grid grid-3">
+      <div>
+        <label>Cliente</label>
+        <input name="f_cliente" value="{{ filtros.f_cliente }}" list="clientesPerf" placeholder="Filtrar por cliente">
+        <datalist id="clientesPerf">
+          {% for c in clientes_filtro %}<option value="{{ c }}"></option>{% endfor %}
+        </datalist>
+      </div>
+      <div>
+        <label>Estado</label>
+        <select name="f_estado">
+          <option value="" {% if not filtros.f_estado %}selected{% endif %}>Todos</option>
+          <option value="ok" {% if filtros.f_estado == 'ok' %}selected{% endif %}>OK (&lt; 80%)</option>
+          <option value="alerta" {% if filtros.f_estado == 'alerta' %}selected{% endif %}>Alerta (80–100%)</option>
+          <option value="risco" {% if filtros.f_estado == 'risco' %}selected{% endif %}>Risco (&gt; 100%)</option>
+        </select>
+      </div>
+      <div style="display:flex; align-items:flex-end; gap:8px;">
+        <button type="submit" class="btn btn-secondary">Filtrar</button>
+        <a class="btn btn-secondary" href="{{ url_for('main.performance') }}">Limpar</a>
+      </div>
+    </div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Detalhamento por projeto</h2>
+  {% if projetos %}
+    {% for p in projetos %}
+      <div style="margin-top:20px; border:1px solid #e5e7eb; border-radius:12px; overflow:hidden;">
+        <div style="padding:12px 16px; background:
+          {% if p.estado == 'risco' %}#fee2e2
+          {% elif p.estado == 'alerta' %}#fef3c7
+          {% else %}#dcfce7{% endif %};
+          display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+          <div>
+            <strong style="font-size:16px;">{{ p.cliente }}</strong>
+            <span style="color:#64748b; font-size:13px;"> — CTRL {{ p.ctrl_numero }}</span>
+            <span class="status tap-status-{{ p.status_tap.lower().replace(' ','-').replace('í','i').replace('é','e') }}" style="margin-left:8px;">{{ p.status_tap }}</span>
+          </div>
+          <div style="font-size:13px;">
+            <strong>{{ '%.2f'|format(p.horas_realizadas) }}h</strong> / {{ '%.2f'|format(p.horas_previstas) }}h
+            &nbsp;|&nbsp; Saldo: <strong style="color:{% if p.saldo < 0 %}#dc2626{% else %}#16a34a{% endif %};">{{ '%.2f'|format(p.saldo) }}h</strong>
+            &nbsp;|&nbsp; Consumido:
+            <strong style="color:{% if p.pct > 100 %}#dc2626{% elif p.pct >= 80 %}#d97706{% else %}#16a34a{% endif %};">{{ '%.1f'|format(p.pct) }}%</strong>
+          </div>
+        </div>
+        <div class="table-wrap" style="border:none; border-radius:0;">
+          <table class="perf-table">
+            <colgroup>
+              <col style="width:24%">
+              <col style="width:10%">
+              <col style="width:10%">
+              <col style="width:10%">
+              <col style="width:12%">
+              <col style="width:11%">
+              <col style="width:11%">
+              <col style="width:12%">
+            </colgroup>
+            <thead>
+              <tr>
+                <th>Entregável</th>
+                <th>Previsto<br>(h)</th>
+                <th>Realizado<br>(h)</th>
+                <th>Saldo<br>(h)</th>
+                <th>% Consumido</th>
+                <th>Início<br>Atividade</th>
+                <th>Fim<br>Atividade</th>
+                <th>Data<br>Conclusão</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for i in p.itens %}
+                <tr>
+                  <td style="text-align:left;">{{ i.entregavel }}</td>
+                  <td>{{ '%.2f'|format(i.horas_previstas) }}</td>
+                  <td>{{ '%.2f'|format(i.horas_realizadas) }}</td>
+                  <td style="color:{% if i.saldo < 0 %}#dc2626{% else %}#16a34a{% endif %}; font-weight:600;">{{ '%.2f'|format(i.saldo) }}</td>
+                  <td>
+                    <div style="position:relative; height:20px; background:#e5e7eb; border-radius:10px; overflow:hidden;">
+                      <div style="position:absolute; left:0; top:0; bottom:0; width:{{ (i.pct if i.pct <= 100 else 100) }}%; background:
+                        {% if i.estado == 'risco' %}#dc2626
+                        {% elif i.estado == 'alerta' %}#d97706
+                        {% else %}#16a34a{% endif %};"></div>
+                      <span style="position:relative; display:block; text-align:center; font-size:11px; font-weight:700; line-height:20px; color:#1f2937;">{{ '%.1f'|format(i.pct) }}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    {% if i.inicio_atividade %}
+                      {{ i.inicio_atividade[8:10] }}/{{ i.inicio_atividade[5:7] }}/{{ i.inicio_atividade[0:4] }}
+                    {% else %}
+                      <span style="color:#94a3b8;">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if i.fim_atividade %}
+                      {{ i.fim_atividade[8:10] }}/{{ i.fim_atividade[5:7] }}/{{ i.fim_atividade[0:4] }}
+                    {% else %}
+                      <span style="color:#94a3b8;">—</span>
+                    {% endif %}
+                  </td>
+                  <td>
+                    {% if i.data_conclusao %}
+                      {% set cor = '#16a34a' if i.conclusao_estado == 'no_prazo' else ('#dc2626' if i.conclusao_estado == 'atrasado' else '#64748b') %}
+                      <span style="color:{{ cor }}; font-weight:700;">{{ i.data_conclusao[8:10] }}/{{ i.data_conclusao[5:7] }}/{{ i.data_conclusao[0:4] }}</span>
+                    {% else %}
+                      <span style="color:#94a3b8;">—</span>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty">Nenhum projeto com entregáveis orçados encontrado.</div>
+  {% endif %}
+</div>
+{% endblock %}

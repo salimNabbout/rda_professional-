@@ -1,5 +1,6 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
 from flask_login import login_user, logout_user, current_user
+from sqlalchemy import func
 from app.extensions import db
 from app.models import User
 
@@ -15,7 +16,7 @@ def login():
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
 
-        user = User.query.filter_by(username=username).first()
+        user = User.query.filter(func.lower(User.username) == username.lower()).first()
         if not user or not user.check_password(password):
             flash("Usuário ou senha inválidos.", "error")
             return render_template("auth/login.html", register_mode=False)
@@ -41,7 +42,7 @@ def register():
             flash("Preencha usuário, nome completo e senha.", "error")
             return render_template("auth/login.html", register_mode=True)
 
-        exists = User.query.filter_by(username=username).first()
+        exists = User.query.filter(func.lower(User.username) == username.lower()).first()
         if exists:
             flash("Esse usuário já existe.", "error")
             return render_template("auth/login.html", register_mode=True)

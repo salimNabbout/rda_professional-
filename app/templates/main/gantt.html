@@ -1,0 +1,158 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}Cronograma — Gantt{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Cronograma dos Projetos</h1>
+      <p>Gantt interativo com Google Charts. Passe o mouse nas barras para ver datas e progresso.</p>
+    </div>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance') }}" title="Performance" aria-label="Performance">{{ icons.performance() }}<span class="btn-label">Performance</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
+    </div>
+  </div>
+</div>
+
+{% if projetos %}
+  <div class="card" style="margin-bottom:16px;">
+    <div style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
+      <div style="flex:0 0 auto;">
+        <label for="projetoGantt" style="margin-bottom:4px;">Projeto</label>
+        <select id="projetoGantt" style="min-width:280px;">
+          {% for p in projetos %}
+            <option value="{{ p.tap_id }}">{{ p.cliente }} — CTRL {{ p.ctrl_numero }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="gantt-legenda-wrap" style="flex:1; min-width:260px; font-size:12px;">
+        <strong>Legenda:</strong>
+        <span class="gantt-legend"><span class="gantt-chip gantt-andamento"></span>Em andamento</span>
+        <span class="gantt-legend"><span class="gantt-chip gantt-concluido"></span>Concluído no prazo</span>
+        <span class="gantt-legend"><span class="gantt-chip gantt-concluido_atrasado"></span>Concluído atrasado</span>
+        <span class="gantt-legend"><span class="gantt-chip gantt-atrasado"></span>Atrasado</span>
+      </div>
+    </div>
+  </div>
+
+  {% for p in projetos %}
+    <div class="card gantt-projeto" data-tap-id="{{ p.tap_id }}" style="margin-bottom:16px; {% if not loop.first %}display:none;{% endif %}">
+      <h3 style="margin:0 0 12px;">{{ p.cliente }} <span style="color:#64748b; font-weight:400;">— CTRL {{ p.ctrl_numero }}</span></h3>
+      <div id="gantt-{{ p.tap_id }}" class="gantt-chart" data-tasks="{{ p.tasks | tojson | forceescape }}"></div>
+    </div>
+  {% endfor %}
+
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script>
+    google.charts.load('current', { packages: ['gantt'] });
+    google.charts.setOnLoadCallback(function () {
+      const renderizados = new Set();
+
+      function renderizarProjeto(tapId) {
+        if (renderizados.has(tapId)) return;
+        const el = document.getElementById('gantt-' + tapId);
+        if (!el) return;
+        desenharGantt(el);
+        renderizados.add(tapId);
+      }
+
+      // Troca de projeto via select
+      const seletor = document.getElementById('projetoGantt');
+      if (seletor) {
+        seletor.addEventListener('change', function () {
+          const selecionado = seletor.value;
+          document.querySelectorAll('.gantt-projeto').forEach(function (card) {
+            card.style.display = (card.dataset.tapId === selecionado) ? '' : 'none';
+          });
+          renderizarProjeto(selecionado);
+        });
+        // Renderiza o projeto inicialmente visível
+        renderizarProjeto(seletor.value);
+      }
+
+      function desenharGantt(el) {
+        const tasks = JSON.parse(el.dataset.tasks);
+        if (!tasks || !tasks.length) return;
+
+        const data = new google.visualization.DataTable();
+        data.addColumn('string', 'Task ID');
+        data.addColumn('string', 'Task Name');
+        data.addColumn('string', 'Resource');
+        data.addColumn('date', 'Start Date');
+        data.addColumn('date', 'End Date');
+        data.addColumn('number', 'Duration');
+        data.addColumn('number', 'Percent Complete');
+        data.addColumn('string', 'Dependencies');
+
+        const statusLabel = {
+          'bar-andamento': 'Em andamento',
+          'bar-concluido': 'Concluído',
+          'bar-concluido-atrasado': 'Concluído (atrasado)',
+          'bar-atrasado': 'Atrasado',
+        };
+        const cores = {
+          'Em andamento':       { color: '#f59e0b', dark: '#d97706', light: '#fde68a' },
+          'Concluído':          { color: '#22c55e', dark: '#15803d', light: '#dcfce7' },
+          'Concluído (atrasado)': { color: '#dc2626', dark: '#7f1d1d', light: '#fecaca' },
+          'Atrasado':           { color: '#dc2626', dark: '#991b1b', light: '#fecaca' },
+        };
+        const corDefault = { color: '#64748b', dark: '#475569', light: '#cbd5e1' };
+
+        // Paleta montada na ordem em que cada recurso aparece (Google Charts
+        // atribui cores por ordem de descoberta, não por nome do recurso).
+        const ordemRecursos = [];
+        const vistos = new Set();
+
+        tasks.forEach(function (t) {
+          const d1 = new Date(t.start + 'T00:00:00');
+          const d2 = new Date(t.end + 'T00:00:00');
+          if (d2 <= d1) d2.setDate(d1.getDate() + 1);
+          const recurso = statusLabel[t.custom_class] || 'Tarefa';
+          if (!vistos.has(recurso)) {
+            vistos.add(recurso);
+            ordemRecursos.push(recurso);
+          }
+          data.addRow([
+            t.id,
+            t.name,
+            recurso,
+            d1,
+            d2,
+            null,
+            t.progress || 0,
+            null,
+          ]);
+        });
+
+        const paletteDinamica = ordemRecursos.map(function (r) {
+          return cores[r] || corDefault;
+        });
+
+        const trackHeight = 32;
+        const options = {
+          height: tasks.length * trackHeight + 50,
+          gantt: {
+            trackHeight: trackHeight,
+            barHeight: 18,
+            criticalPathEnabled: false,
+            arrow: { angle: 100, width: 2, color: 'transparent', radius: 0 },
+            palette: paletteDinamica,
+            labelStyle: { fontName: 'Arial', fontSize: 12, color: '#1f2937' },
+            innerGridHorizLine: { stroke: '#e5e7eb', strokeWidth: 1 },
+            innerGridTrack: { fill: '#f8fafc' },
+            innerGridDarkTrack: { fill: '#eff6ff' },
+          },
+        };
+
+        const chart = new google.visualization.Gantt(el);
+        chart.draw(data, options);
+      }
+    });
+  </script>
+{% else %}
+  <div class="card">
+    <div class="empty">Sem projetos com datas planejadas ou registros RDA. Preencha as datas de Início e Fim Atividade nos TAPs para visualizar o cronograma.</div>
+  </div>
+{% endif %}
+{% endblock %}

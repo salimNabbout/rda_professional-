@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import '_icons.html' as icons %}
 {% block title %}Usuários{% endblock %}
 {% block content %}
 <div class="banner">
@@ -7,61 +8,138 @@
       <h1>Administração de Usuários</h1>
       <p>Gerencie perfis e nomes do sistema RDA.</p>
     </div>
-    <div class="actions">
-      <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Voltar</a>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
     </div>
   </div>
 </div>
 
+<div class="card" style="margin-bottom:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <h2 style="margin:0;">Novo usuário</h2>
+    <button type="button" class="btn btn-primary btn-icon-inline" onclick="document.getElementById('formNovoUsuario').style.display = document.getElementById('formNovoUsuario').style.display === 'none' ? 'block' : 'none';" title="Incluir usuário">{{ icons.add() }}<span>Incluir usuário</span></button>
+  </div>
+  <form id="formNovoUsuario" method="post" action="{{ url_for('admin.create_user') }}" style="display:none; margin-top:16px;">
+    <div class="grid grid-3">
+      <div>
+        <label>Usuário (login)</label>
+        <input name="username" required placeholder="ex: email@empresa.com">
+      </div>
+      <div>
+        <label>Nome completo</label>
+        <input name="nome_completo" required>
+      </div>
+      <div>
+        <label>Senha</label>
+        <input name="password" type="password" required minlength="4">
+      </div>
+    </div>
+    <div class="grid grid-4" style="margin-top:12px;">
+      <div>
+        <label>Perfil</label>
+        <select name="role">
+          <option value="colaborador" selected>colaborador</option>
+          <option value="gestor">gestor</option>
+          <option value="admin">admin</option>
+        </select>
+      </div>
+      <div>
+        <label>Acesso TAP</label>
+        <select name="acesso_tap">
+          <option value="0" selected>Não</option>
+          <option value="1">Sim</option>
+        </select>
+      </div>
+      <div>
+        <label>Acesso PDI</label>
+        <select name="acesso_produtividade">
+          <option value="0" selected>Não</option>
+          <option value="1">Sim</option>
+        </select>
+      </div>
+      <div style="display:flex; align-items:flex-end;">
+        <button type="submit" class="btn btn-primary btn-icon-inline" style="width:100%;" title="Criar usuário">{{ icons.save() }}<span>Criar usuário</span></button>
+      </div>
+    </div>
+  </form>
+</div>
+
 <div class="card">
   <h2>Usuários do sistema</h2>
+  <form method="post" action="{{ url_for('admin.bulk_update_users') }}">
   <div class="table-wrap">
-    <table>
+    <table class="users-table">
+      <colgroup>
+        <col style="width:4%">
+        <col style="width:18%">
+        <col style="width:19%">
+        <col style="width:12%">
+        <col style="width:10%">
+        <col style="width:12%">
+        <col style="width:10%">
+        <col style="width:15%">
+      </colgroup>
       <thead>
-<th>ID</th>
-          <th>Usuário (login)</th>
-          <th>Nome completo</th>
+        <tr>
+          <th>ID</th>
+          <th>Usuário<br>(login)</th>
+          <th>Nome<br>completo</th>
           <th>Perfil</th>
-          <th>Acesso TAP</th>
-          <th>Criado em</th>
+          <th>Acesso<br>TAP</th>
+          <th>Acesso<br>PDI</th>
+          <th>Criado<br>em</th>
           <th>Ações</th>
+        </tr>
       </thead>
       <tbody>
         {% for user in users %}
           <tr>
             <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
+            <td class="break-all">{{ user.username }}</td>
             <td>
-              <form method="post" action="{{ url_for('admin.update_user_nome', user_id=user.id) }}" class="actions">
-                <input name="nome_completo" value="{{ user.nome_completo or '' }}" required style="min-width:180px;">
-                <button type="submit" class="btn btn-primary">Salvar</button>
-              </form>
+              <input name="user_{{ user.id }}_nome_completo" value="{{ user.nome_completo or '' }}" required>
             </td>
-            <td>{{ user.role }}</td>
             <td>
-              <form method="post" action="{{ url_for('admin.update_user_tap', user_id=user.id) }}" class="actions">
-                <select name="acesso_tap">
-                  <option value="0" {% if not user.acesso_tap %}selected{% endif %}>Não</option>
-                  <option value="1" {% if user.acesso_tap %}selected{% endif %}>Sim</option>
-                </select>
-                <button type="submit" class="btn btn-primary">Salvar</button>
-              </form>
+              <select name="user_{{ user.id }}_role">
+                <option value="colaborador" {% if user.role == 'colaborador' %}selected{% endif %}>colaborador</option>
+                <option value="gestor" {% if user.role == 'gestor' %}selected{% endif %}>gestor</option>
+                <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
+              </select>
             </td>
-            <td>{{ user.created_at }}</td>
             <td>
-              <form method="post" action="{{ url_for('admin.update_user_role', user_id=user.id) }}" class="actions">
-                <select name="role">
-                  <option value="colaborador" {% if user.role == 'colaborador' %}selected{% endif %}>colaborador</option>
-                  <option value="gestor" {% if user.role == 'gestor' %}selected{% endif %}>gestor</option>
-                  <option value="admin" {% if user.role == 'admin' %}selected{% endif %}>admin</option>
-                </select>
-                <button type="submit" class="btn btn-primary">Salvar</button>
-              </form>
+              <select name="user_{{ user.id }}_acesso_tap">
+                <option value="0" {% if not user.acesso_tap %}selected{% endif %}>Não</option>
+                <option value="1" {% if user.acesso_tap %}selected{% endif %}>Sim</option>
+              </select>
+            </td>
+            <td>
+              <select name="user_{{ user.id }}_acesso_produtividade">
+                <option value="0" {% if not user.acesso_produtividade %}selected{% endif %}>Não</option>
+                <option value="1" {% if user.acesso_produtividade %}selected{% endif %}>Sim</option>
+              </select>
+            </td>
+            <td>{{ user.created_at.strftime('%d/%m/%Y') if user.created_at else '' }}</td>
+            <td>
+              {% if user.id != current_user.id %}
+                <button type="submit"
+                        class="btn btn-danger btn-sm btn-icon-inline"
+                        formaction="{{ url_for('admin.delete_user', user_id=user.id) }}"
+                        formmethod="post"
+                        formnovalidate
+                        onclick="return confirm('Excluir o usuário {{ user.display_name }}?\n\nATENÇÃO: Todos os registros RDA deste usuário também serão removidos. Esta ação não pode ser desfeita.');"
+                        title="Excluir">{{ icons.delete() }}<span>Excluir</span></button>
+              {% else %}
+                <span style="font-size:10px; color:#94a3b8;">(você)</span>
+              {% endif %}
             </td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+  <div class="actions" style="margin-top:16px;">
+    <button type="submit" class="btn btn-primary btn-icon-inline" title="Salvar alterações de todos os usuários">{{ icons.save() }}<span>Salvar alterações</span></button>
+  </div>
+  </form>
 </div>
 {% endblock %}

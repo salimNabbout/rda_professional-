@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import '_icons.html' as icons %}
 {% block title %}TAPs — Termos de Abertura de Projeto{% endblock %}
 {% block content %}
 <div class="banner">
@@ -7,28 +8,58 @@
       <h1>TAP - Termo de Abertura de Projeto</h1>
       <p>Cadastro e orçamento de projetos. Acesso restrito.</p>
     </div>
-    <div class="actions">
-      <a class="btn btn-primary" href="{{ url_for('tap.novo') }}">+ Nova TAP</a>
-      <a class="btn btn-success" href="{{ url_for('tap.export_csv_lista') }}">Exportar CSV</a>
-      <a class="btn btn-success" href="{{ url_for('tap.export_pdf_lista') }}">Exportar PDF</a>
-      <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Voltar ao RDA</a>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-primary" href="{{ url_for('tap.novo') }}" title="Nova TAP" aria-label="Nova TAP">{{ icons.add() }}<span class="btn-label">Nova TAP</span></a>
+      <a class="btn btn-icon btn-success" href="{{ url_for('tap.export_csv_lista') }}" title="Exportar CSV" aria-label="Exportar CSV">{{ icons.csv() }}<span class="btn-label">CSV</span></a>
+      <a class="btn btn-icon btn-success" href="{{ url_for('tap.export_pdf_lista') }}" title="Exportar PDF" aria-label="Exportar PDF">{{ icons.pdf() }}<span class="btn-label">PDF</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
     </div>
   </div>
 </div>
+
+{% if current_user.is_admin() %}
+  <div class="card" style="margin-bottom:20px; background:#f0f9ff; border-left:4px solid #0f4c81;">
+    <h2 style="margin:0 0 8px;">Numeração CTRL — ano {{ ano_atual }}</h2>
+    <p style="margin:0 0 12px; font-size:13px; color:#334155;">
+      Define o <strong>primeiro CTRL</strong> do ano. Os próximos TAPs seguirão a sequência automaticamente
+      até o final do ano ({{ ano_atual }}).
+      {% if ctrl_base %}
+        Base atual: <strong>{{ ctrl_base }}/{{ ano_atual }}</strong>.
+      {% else %}
+        <em>Nenhuma base definida ainda.</em>
+      {% endif %}
+      Próximo CTRL sugerido: <strong>{{ proximo }}</strong>.
+    </p>
+    <form method="post" action="{{ url_for('tap.set_ctrl_base') }}" class="actions actions-inline" style="max-width:360px;">
+      <input name="base_ctrl" placeholder="Ex: 2577/26" value="{{ (ctrl_base + '/' + ano_atual) if ctrl_base else '' }}" required style="flex:1;">
+      <button type="submit" class="btn btn-primary btn-sm btn-icon-inline" title="Salvar numeração">{{ icons.save() }}<span>Salvar</span></button>
+    </form>
+  </div>
+{% endif %}
 
 <div class="card">
   <h2>TAPs cadastradas</h2>
   {% if taps %}
     <div class="table-wrap">
-      <table>
+      <table class="tap-list-table">
+        <colgroup>
+          <col style="width:10%">
+          <col style="width:22%">
+          <col style="width:12%">
+          <col style="width:9%">
+          <col style="width:11%">
+          <col style="width:11%">
+          <col style="width:10%">
+          <col style="width:15%">
+        </colgroup>
         <thead>
           <tr>
             <th>CTRL Nº</th>
             <th>Cliente</th>
-            <th>Status da Proposta</th>
-            <th>HH (R$)</th>
-            <th>Valor Total</th>
-            <th>Valor Corrigido</th>
+            <th>Status<br>da Proposta</th>
+            <th>HH<br>(R$)</th>
+            <th>Valor<br>Total</th>
+            <th>Valor<br>Corrigido</th>
             <th>No RDA?</th>
             <th>Ações</th>
           </tr>
@@ -42,9 +73,9 @@
                 {% set cls = t.status_proposta.lower().replace(' ', '-').replace('í','i').replace('é','e') %}
                 <span class="status tap-status-{{ cls }}">{{ t.status_proposta }}</span>
               </td>
-              <td>R$ {{ '%.2f' % t.hh_valor | float }}</td>
-              <td>R$ {{ '%.2f' % t.valor_total }}</td>
-              <td>R$ {{ '%.2f' % t.valor_total_corrigido }}</td>
+              <td>{{ t.hh_valor | brl }}</td>
+              <td>{{ t.valor_total | brl }}</td>
+              <td>{{ t.valor_total_corrigido | brl }}</td>
               <td>
                 {% if t.disponivel_no_rda %}
                   <span class="status concluido">Disponível</span>
@@ -53,10 +84,11 @@
                 {% endif %}
               </td>
               <td>
-                <div class="actions">
-                  <a class="btn btn-warning" href="{{ url_for('tap.editar', tap_id=t.id) }}">Abrir</a>
-                  <form method="post" action="{{ url_for('tap.excluir', tap_id=t.id) }}" onsubmit="return confirm('Excluir esta TAP?');">
-                    <button class="btn btn-danger" type="submit">Excluir</button>
+                <div class="actions actions-compact">
+                  <a class="btn btn-warning btn-sm btn-icon-inline" href="{{ url_for('tap.editar', tap_id=t.id) }}" title="Abrir" aria-label="Abrir">{{ icons.open() }}<span>Abrir</span></a>
+                  <form method="post" action="{{ url_for('tap.excluir', tap_id=t.id) }}" onsubmit="return confirmarExclusaoTap(this);">
+                    <input type="hidden" name="apagar_rda" value="0">
+                    <button class="btn btn-danger btn-sm btn-icon-inline" type="submit" title="Excluir" aria-label="Excluir">{{ icons.delete() }}<span>Excluir</span></button>
                   </form>
                 </div>
               </td>
@@ -69,4 +101,14 @@
     <div class="empty">Nenhuma TAP cadastrada. Clique em "+ Nova TAP" para começar.</div>
   {% endif %}
 </div>
+
+<script>
+  function confirmarExclusaoTap(form) {
+    if (!confirm('Excluir esta TAP?')) return false;
+    if (confirm('Deseja apagar este projeto no RDA?')) {
+      form.querySelector('input[name="apagar_rda"]').value = '1';
+    }
+    return true;
+  }
+</script>
 {% endblock %}

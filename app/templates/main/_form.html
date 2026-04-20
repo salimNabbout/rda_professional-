@@ -8,7 +8,7 @@
     </div>
     <div>
       <label>Cliente</label>
-      <input name="cliente" value="{{ form.cliente if form else '' }}" list="clientesTAP" required placeholder="Selecione um projeto ou digite">
+      <input id="inputCliente" name="cliente" value="{{ form.cliente if form else '' }}" list="clientesTAP" required placeholder="Selecione um projeto ou digite">
       <datalist id="clientesTAP">
         {% for c in clientes_tap or [] %}
           <option value="{{ c }}"></option>
@@ -20,9 +20,26 @@
     </div>
   </div>
 
-  <div style="margin-top:16px;">
-    <label>Data</label>
-    <input type="date" name="data" value="{{ form.data if form else '' }}" required>
+  {% set atividades = entregaveis_default or [] %}
+  {% set atual_realizado = form.realizado if form else '' %}
+  <div class="grid grid-2" style="margin-top:16px;">
+    <div>
+      <label>Data</label>
+      <input type="date" name="data" value="{{ form.data if form else '' }}" required>
+    </div>
+    <div>
+      <label>Entregáveis</label>
+      <select id="selectRealizado" name="realizado" required data-atual="{{ atual_realizado }}">
+        <option value="">Selecione uma Atividade</option>
+        {% for atividade in atividades %}
+          <option value="{{ atividade }}" {% if atual_realizado == atividade %}selected{% endif %}>{{ atividade }}</option>
+        {% endfor %}
+        {% if atual_realizado and atual_realizado not in atividades %}
+          <option value="{{ atual_realizado }}" selected>{{ atual_realizado }} (registro antigo)</option>
+        {% endif %}
+      </select>
+      <small id="hintRealizado" style="display:none; margin-top:4px; color:#6b7a99; font-size:11px;"></small>
+    </div>
   </div>
 
   <fieldset style="margin-top:16px; padding:12px; border:1px solid #d9e1f2; border-radius:8px;">
@@ -54,45 +71,15 @@
     <p style="margin:8px 0 0; font-size:12px; color:#6b7a99;">Campos em branco são considerados zero.</p>
   </fieldset>
 
-  {% set atividades = [
-    'Visita Técnica ou Comercial',
-    'Reunião Técnica ou Comercial',
-    'Elaboração de Proposta',
-    'Projetos',
-    'Desenvolvimento Software PLC',
-    'Desenvolvimento Software IHM',
-    'Desenvolvimento Software SCADA',
-    'Desenvolvimento Software Agêntica',
-    'Design (Telas)',
-    'Montagem de Painéis',
-    'Instalações de Painéis',
-    'Comissionamento',
-    'Partida Assistida',
-    'Treinamento',
-    'Elaboração de DataBook'
-  ] %}
-  {% set atual_realizado = form.realizado if form else '' %}
-  <div style="margin-top:16px;">
-    <label>O que foi realizado</label>
-    <select name="realizado" required>
-      <option value="">Selecione uma Atividade</option>
-      {% for atividade in atividades %}
-        <option value="{{ atividade }}" {% if atual_realizado == atividade %}selected{% endif %}>{{ atividade }}</option>
-      {% endfor %}
-      {% if atual_realizado and atual_realizado not in atividades %}
-        <option value="{{ atual_realizado }}" selected>{{ atual_realizado }} (registro antigo)</option>
-      {% endif %}
-    </select>
-  </div>
-
   <div style="margin-top:16px;">
     <label>Status do RDA</label>
-    <select name="status_rda">
+    <select id="selectStatusRDA" name="status_rda">
       {% set current_status = form.status_rda if form and form.status_rda else 'Em Andamento' %}
       {% for status in ['Em Andamento', 'Concluído', 'Atrasado'] %}
         <option value="{{ status }}" {% if current_status == status %}selected{% endif %}>{{ status }}</option>
       {% endfor %}
     </select>
+    <small id="hintStatusRDA" style="display:none; margin-top:4px; color:#6b7a99; font-size:11px;"></small>
   </div>
 
   <div class="actions" style="margin-top:16px;">
@@ -100,3 +87,279 @@
     <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Limpar</a>
   </div>
 </form>
+
+<script>
+  (function () {
+    const mapaEntregaveis = {{ (entregaveis_map or {}) | tojson }};
+    const defaultEntregaveis = {{ (entregaveis_default or []) | tojson }};
+    const inputCliente = document.getElementById('inputCliente');
+    const selectRealizado = document.getElementById('selectRealizado');
+    const selectStatus = document.getElementById('selectStatusRDA');
+    const hint = document.getElementById('hintRealizado');
+    const hintStatus = document.getElementById('hintStatusRDA');
+    if (!inputCliente || !selectRealizado || !selectStatus) return;
+
+    const ATIV_FIXAS = ['PDI', 'P&D'];
+    const CLIENTE_FIXO = 'CETEM Tecnologia';
+    const isFixa = (v) => ATIV_FIXAS.indexOf(v) !== -1;
+    let clienteBackup = (inputCliente.value && inputCliente.value !== CLIENTE_FIXO) ? inputCliente.value : '';
+
+    function atualizar() {
+      const valor = (inputCliente.value || '').trim();
+      const atual = selectRealizado.dataset.atual || '';
+      let lista;
+      let mensagem = '';
+
+      const clienteValido = valor && Object.prototype.hasOwnProperty.call(mapaEntregaveis, valor);
+      if (clienteValido) {
+        lista = mapaEntregaveis[valor] || [];
+        if (lista.length === 0) {
+          mensagem = 'Este projeto não possui entregáveis com valor no TAP.';
+        } else {
+          mensagem = 'Exibindo apenas os entregáveis selecionados no TAP deste projeto.';
+        }
+      } else {
+        // Sem cliente selecionado (ou cliente sem TAP): apenas as atividades fixas.
+        lista = [];
+        mensagem = 'Selecione um Cliente para liberar os entregáveis do TAP.';
+      }
+
+      selectRealizado.innerHTML = '';
+      const opt0 = document.createElement('option');
+      opt0.value = '';
+      opt0.textContent = 'Selecione uma Atividade';
+      selectRealizado.appendChild(opt0);
+
+      lista.forEach(function (item) {
+        const op = document.createElement('option');
+        op.value = item;
+        op.textContent = item;
+        if (atual === item) op.selected = true;
+        selectRealizado.appendChild(op);
+      });
+
+      // Atividades fixas (PDI, P&D) — somente quando NÃO houver cliente válido selecionado
+      if (!clienteValido) {
+        ATIV_FIXAS.forEach(function (nome) {
+          const op = document.createElement('option');
+          op.value = nome;
+          op.textContent = nome;
+          if (atual === nome) op.selected = true;
+          selectRealizado.appendChild(op);
+        });
+      }
+
+      if (atual && !isFixa(atual) && lista.indexOf(atual) === -1) {
+        const op = document.createElement('option');
+        op.value = atual;
+        op.textContent = atual + ' (registro antigo)';
+        op.selected = true;
+        selectRealizado.appendChild(op);
+      }
+
+      if (mensagem) {
+        hint.textContent = mensagem;
+        hint.style.display = 'block';
+      } else {
+        hint.style.display = 'none';
+      }
+
+      atualizarStatus();
+    }
+
+    function ensureHiddenStatus(valor) {
+      let hidden = document.getElementById('hiddenStatusRDA');
+      if (!hidden) {
+        hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.id = 'hiddenStatusRDA';
+        hidden.name = 'status_rda';
+        selectStatus.parentNode.appendChild(hidden);
+      }
+      hidden.value = valor;
+    }
+
+    function removeHiddenStatus() {
+      const hidden = document.getElementById('hiddenStatusRDA');
+      if (hidden) hidden.remove();
+    }
+
+    function atualizarStatus() {
+      const isPDI = selectRealizado.value === 'PDI';
+      if (isPDI) {
+        selectStatus.disabled = true;
+        selectStatus.style.opacity = '0.55';
+        selectStatus.style.cursor = 'not-allowed';
+        selectStatus.style.backgroundColor = '#f1f5f9';
+        selectStatus.style.pointerEvents = 'none';
+        Array.from(selectStatus.options).forEach(function (op) { op.disabled = true; });
+        ensureHiddenStatus(selectStatus.value || 'Em Andamento');
+        if (hintStatus) {
+          hintStatus.textContent = 'Status desativado para atividade PDI.';
+          hintStatus.style.display = 'block';
+        }
+      } else {
+        selectStatus.disabled = false;
+        selectStatus.style.opacity = '';
+        selectStatus.style.cursor = '';
+        selectStatus.style.backgroundColor = '';
+        selectStatus.style.pointerEvents = '';
+        Array.from(selectStatus.options).forEach(function (op) { op.disabled = false; });
+        removeHiddenStatus();
+        if (hintStatus) hintStatus.style.display = 'none';
+      }
+    }
+
+    function atualizarCliente() {
+      const fixa = isFixa(selectRealizado.value);
+      if (fixa) {
+        if (inputCliente.value !== CLIENTE_FIXO) clienteBackup = inputCliente.value;
+        inputCliente.value = CLIENTE_FIXO;
+        inputCliente.readOnly = true;
+        inputCliente.style.opacity = '0.55';
+        inputCliente.style.cursor = 'not-allowed';
+        inputCliente.style.backgroundColor = '#f1f5f9';
+      } else {
+        if (inputCliente.readOnly) {
+          inputCliente.value = clienteBackup;
+        }
+        inputCliente.readOnly = false;
+        inputCliente.style.opacity = '';
+        inputCliente.style.cursor = '';
+        inputCliente.style.backgroundColor = '';
+      }
+    }
+
+    inputCliente.addEventListener('change', atualizar);
+    inputCliente.addEventListener('input', function () {
+      if (!inputCliente.readOnly) clienteBackup = inputCliente.value;
+      atualizar();
+    });
+    selectRealizado.addEventListener('change', function () {
+      selectRealizado.dataset.atual = selectRealizado.value;
+      atualizarCliente();
+      atualizar();
+      atualizarStatus();
+    });
+
+    atualizar();
+    atualizarCliente();
+    atualizarStatus();
+  })();
+
+  // Regra obrigatória: Hora Início Tarde >= Hora Final Manhã + 1h
+  // Enquanto inválido, o colaborador fica travado no campo hora_inicio_tarde
+  // e não pode interagir com nenhum outro campo/botão do form.
+  (function () {
+    const fm = document.querySelector('input[name="hora_final_manha"]');
+    const it = document.querySelector('input[name="hora_inicio_tarde"]');
+    if (!fm || !it) return;
+    const form = fm.closest('form');
+    if (!form) return;
+
+    // Mensagem inline abaixo do campo
+    let aviso = document.getElementById('avisoInicioTarde');
+    if (!aviso) {
+      aviso = document.createElement('div');
+      aviso.id = 'avisoInicioTarde';
+      aviso.style.cssText = 'display:none; margin-top:6px; padding:8px 10px; border-radius:8px; background:#fef2f2; color:#b91c1c; border:1px solid #fca5a5; font-size:12px; font-weight:600;';
+      it.parentNode.appendChild(aviso);
+    }
+
+    let travado = false;
+
+    function toMin(v) {
+      if (!v || v === '00:00') return 0;
+      const p = String(v).split(':').map(Number);
+      if (p.length < 2 || isNaN(p[0]) || isNaN(p[1])) return 0;
+      return p[0] * 60 + p[1];
+    }
+
+    function violaRegra() {
+      const f = toMin(fm.value);
+      const i = toMin(it.value);
+      if (f === 0 || i === 0) return false;
+      return i < f + 60;
+    }
+
+    function travar() {
+      travado = true;
+      it.style.borderColor = '#dc2626';
+      it.style.backgroundColor = '#fef2f2';
+      it.setCustomValidity('Início da Tarde deve ser ≥ Final da Manhã + 1h');
+      const minValido = toMin(fm.value) + 60;
+      const h = Math.floor(minValido / 60).toString().padStart(2, '0');
+      const m = (minValido % 60).toString().padStart(2, '0');
+      aviso.textContent = 'Início da Tarde deve ser no mínimo ' + h + ':' + m +
+        ' (1h após o Final da Manhã ' + fm.value + '). Corrija para continuar.';
+      aviso.style.display = 'block';
+    }
+
+    function destravar() {
+      travado = false;
+      it.style.borderColor = '';
+      it.style.backgroundColor = '';
+      it.setCustomValidity('');
+      aviso.style.display = 'none';
+    }
+
+    function reavaliar() {
+      if (violaRegra()) {
+        travar();
+      } else {
+        destravar();
+      }
+    }
+
+    // Reavalia a cada mudança
+    fm.addEventListener('input', reavaliar);
+    it.addEventListener('input', reavaliar);
+    fm.addEventListener('change', reavaliar);
+    it.addEventListener('change', reavaliar);
+
+    // Trava: qualquer tentativa de focar em outro elemento do form volta para it
+    form.addEventListener('focusin', function (ev) {
+      if (!travado) return;
+      if (ev.target === it) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      setTimeout(function () { it.focus(); }, 0);
+    }, true);
+
+    // Trava: bloqueia cliques em outros elementos do form
+    form.addEventListener('mousedown', function (ev) {
+      if (!travado) return;
+      if (ev.target === it || (ev.target.closest && ev.target.closest('input[name="hora_inicio_tarde"]'))) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      it.focus();
+    }, true);
+
+    // Trava: bloqueia Tab/Enter para sair do campo
+    it.addEventListener('keydown', function (ev) {
+      if (!travado) return;
+      if (ev.key === 'Tab' || ev.key === 'Enter') {
+        ev.preventDefault();
+      }
+    });
+
+    // Submit — nunca avança enquanto travado
+    form.addEventListener('submit', function (ev) {
+      if (violaRegra()) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        travar();
+        alert(
+          'Início do período da Tarde inválido.\n\n' +
+          'A Hora Início da Tarde deve ser no mínimo 1 hora após a Hora Final da Manhã.\n' +
+          'Corrija o campo "Hora Início" do período da tarde para continuar.'
+        );
+        it.focus();
+        return false;
+      }
+    }, true);
+
+    // Estado inicial
+    reavaliar();
+  })();
+</script>

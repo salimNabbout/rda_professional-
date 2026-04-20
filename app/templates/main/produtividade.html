@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}PDI — Programa de Desenvolvimento Individual{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>PDI — Programa de Desenvolvimento Individual</h1>
+      <p>Avaliação mensal do colaborador: volume, meta PDI (20h), eficiência no TAP, SLA e conclusão.</p>
+    </div>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance') }}" title="Previsto vs Realizado" aria-label="Performance">{{ icons.performance() }}<span class="btn-label">Performance</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+    <h2 style="margin:0;">Mês {{ mes_label }}</h2>
+    <form method="get" action="{{ url_for('main.performance_colaboradores') }}" style="display:flex; align-items:center; gap:8px; margin:0;">
+      <label for="mesProdutividade" style="margin:0; font-size:12px; color:#334155;">Selecionar mês:</label>
+      <select id="mesProdutividade" name="mes" onchange="this.form.submit()" style="width:auto; min-width:140px; padding:6px 10px; font-size:13px;">
+        {% for m in meses_disponiveis or [] %}
+          {% set label = m[5:7] + '/' + m[0:4] %}
+          <option value="{{ m }}" {% if m == mes_key %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Colaboradores</h2>
+  {% if linhas %}
+    <div class="table-wrap">
+      <table class="prod-table">
+        <colgroup>
+          <col style="width:17%">
+          <col style="width:10%">
+          <col style="width:9%">
+          <col style="width:8%">
+          <col style="width:10%">
+          <col style="width:10%">
+          <col style="width:12%">
+          <col style="width:9%">
+          <col style="width:8%">
+          <col style="width:7%">
+        </colgroup>
+        <thead>
+          <tr>
+            <th>Colaborador</th>
+            <th>Score<br>Composto</th>
+            <th>Aderência<br>(156h)</th>
+            <th>PDI</th>
+            <th>Eficiência<br>TAP</th>
+            <th>SLA<br>(no prazo)</th>
+            <th>Atividades<br>(concl./total)</th>
+            <th>% Conclusão</th>
+            <th>% Atrasos<br>(registros)</th>
+            <th>Horas<br>totais</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if media %}
+            <tr style="background:#eff6ff; font-size:11px;">
+              <td style="text-align:left; color:#1e40af; font-weight:700;">Média da equipe</td>
+              <td><strong style="color:#1e40af;">{{ '%.1f'|format(media.score) }}</strong></td>
+              <td style="color:#1e40af;">{{ '%.1f'|format(media.aderencia) }}%</td>
+              <td style="color:#1e40af;">{{ '%.1f'|format(media.pdi) }}%</td>
+              <td colspan="3" style="color:#64748b; font-style:italic;">benchmark referencial</td>
+              <td style="color:#1e40af;">{{ '%.1f'|format(media.conclusao) }}%</td>
+              <td colspan="2"></td>
+            </tr>
+          {% endif %}
+          {% for c in linhas %}
+            <tr>
+              <td style="text-align:left; font-weight:600;">{{ c.colaborador }}</td>
+              <td>
+                {% set cor_score = '#16a34a' if c.score >= 80 else ('#d97706' if c.score >= 60 else '#dc2626') %}
+                <div style="display:inline-block; min-width:52px; padding:4px 10px; border-radius:8px; background:{{ cor_score }}; color:#fff; font-weight:800; font-size:14px;">{{ '%.1f'|format(c.score) }}</div>
+              </td>
+              <td>
+                <span style="color:{% if c.pct_aderencia_projeto < 70 %}#dc2626{% elif c.pct_aderencia_projeto < 90 %}#d97706{% elif c.pct_aderencia_projeto <= 110 %}#16a34a{% else %}#d97706{% endif %}; font-weight:700;">
+                  {{ '%.1f'|format(c.pct_aderencia_projeto) }}%
+                </span>
+              </td>
+              <td>
+                {% if c.pdi_cumprido %}
+                  <span style="color:#16a34a; font-weight:700;" title="{{ '%.2f'|format(c.pdi_horas) }}h / 20h">✓ Cumprido</span>
+                {% else %}
+                  <span style="color:#dc2626; font-weight:700;" title="{{ '%.2f'|format(c.pdi_horas) }}h / 20h">{{ '%.1f'|format(c.pct_pdi) }}%</span>
+                {% endif %}
+              </td>
+              <td>
+                {% if c.eficiencia is none %}
+                  <span style="color:#94a3b8;">—</span>
+                {% else %}
+                  <span style="color:{% if c.eficiencia >= 90 and c.eficiencia <= 110 %}#16a34a{% elif c.eficiencia >= 80 and c.eficiencia <= 130 %}#d97706{% else %}#dc2626{% endif %}; font-weight:700;">
+                    {{ '%.1f'|format(c.eficiencia) }}%
+                  </span>
+                {% endif %}
+              </td>
+              <td>
+                {% if c.pct_sla is none %}
+                  <span style="color:#94a3b8;">—</span>
+                {% else %}
+                  <span style="color:{% if c.pct_sla >= 90 %}#16a34a{% elif c.pct_sla >= 70 %}#d97706{% else %}#dc2626{% endif %}; font-weight:700;">
+                    {{ '%.1f'|format(c.pct_sla) }}%
+                  </span>
+                  <span style="font-size:10px; color:#64748b;"> ({{ c.sla_no_prazo }}/{{ c.sla_total }})</span>
+                {% endif %}
+              </td>
+              <td>{{ c.atividades_concluidas }} / {{ c.atividades_total }}</td>
+              <td>
+                <div style="position:relative; height:16px; background:#e5e7eb; border-radius:8px; overflow:hidden;">
+                  <div style="position:absolute; left:0; top:0; bottom:0; width:{{ c.pct_concluidas if c.pct_concluidas <= 100 else 100 }}%; background:#16a34a;"></div>
+                  <span style="position:relative; display:block; text-align:center; font-size:10px; font-weight:700; line-height:16px; color:#1f2937;">{{ '%.1f'|format(c.pct_concluidas) }}%</span>
+                </div>
+              </td>
+              <td>
+                <span style="color:{% if c.pct_atrasos == 0 %}#16a34a{% elif c.pct_atrasos < 20 %}#d97706{% else %}#dc2626{% endif %}; font-weight:700;">
+                  {{ '%.1f'|format(c.pct_atrasos) }}%
+                </span>
+              </td>
+              <td><strong>{{ '%.2f'|format(c.total_horas) }}h</strong></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px; font-size:11px; color:#64748b;">
+      <p><strong>Score Composto</strong>: média ponderada das 5 dimensões — Aderência (25%) · PDI (15%) · Eficiência TAP (25%) · SLA (25%) · Conclusão (10%). Cada dimensão vira nota 0–100. Verde ≥ 80, âmbar 60–79, vermelho &lt; 60.</p>
+      <p><strong>Aderência (156h)</strong>: horas de projeto ÷ capacidade efetiva (176h − 20h PDI). Faixa ideal 90–110%. Acima de 110% pode indicar sobrecarga.</p>
+      <p><strong>PDI</strong>: meta de 20h/mês. "✓ Cumprido" = atingiu a meta; caso contrário, exibe o % realizado. PDI acima de 20h não gera bônus no score.</p>
+      <p><strong>Eficiência TAP</strong>: parcela orçada pro-rata ÷ horas gastas em atividades <em>concluídas</em>. Faixa ideal 90–110%. "—" se não houve atividade orçada concluída.</p>
+      <p><strong>SLA (no prazo)</strong>: atividades concluídas dentro do fim_atividade ÷ atividades concluídas com prazo definido.</p>
+      <p><strong>% Conclusão</strong>: atividades concluídas ÷ atividades trabalhadas no mês. <strong>% Atrasos</strong>: registros com flag sticky de atraso ÷ total de registros.</p>
+    </div>
+  {% else %}
+    <div class="empty">Sem registros no mês selecionado.</div>
+  {% endif %}
+</div>
+{% endblock %}

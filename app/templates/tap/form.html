@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% import '_icons.html' as icons %}
 {% block title %}{{ 'Editar' if editing else 'Nova' }} TAP{% endblock %}
 {% block content %}
 <div class="banner">
@@ -7,12 +8,12 @@
       <h1>{{ 'Editar' if editing else 'Nova' }} TAP</h1>
       <p>Termo de Abertura de Projeto — Estrutura Analítica (EAP)</p>
     </div>
-    <div class="actions">
+    <div class="actions icon-nav">
       {% if editing and tap.id %}
-        <a class="btn btn-success" href="{{ url_for('tap.export_csv_detalhe', tap_id=tap.id) }}">Exportar CSV</a>
-        <a class="btn btn-success" href="{{ url_for('tap.export_pdf_detalhe', tap_id=tap.id) }}">Exportar PDF</a>
+        <a class="btn btn-icon btn-success" href="{{ url_for('tap.export_csv_detalhe', tap_id=tap.id) }}" title="Exportar CSV" aria-label="Exportar CSV">{{ icons.csv() }}<span class="btn-label">CSV</span></a>
+        <a class="btn btn-icon btn-success" href="{{ url_for('tap.export_pdf_detalhe', tap_id=tap.id) }}" title="Exportar PDF" aria-label="Exportar PDF">{{ icons.pdf() }}<span class="btn-label">PDF</span></a>
       {% endif %}
-      <a class="btn btn-secondary" href="{{ url_for('tap.list_taps') }}">← Voltar para lista</a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('tap.list_taps') }}" title="Voltar para lista" aria-label="Voltar para lista">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
     </div>
   </div>
 </div>
@@ -23,7 +24,15 @@
     <div class="grid grid-3">
       <div>
         <label>CTRL Nº</label>
-        <input name="ctrl_numero" value="{{ tap.ctrl_numero or '' }}" required maxlength="50" placeholder="ex: PROJ-2026-001">
+        <input name="ctrl_numero" value="{{ tap.ctrl_numero or '' }}" required maxlength="50" placeholder="ex: 2577/26"
+               readonly style="background:#f1f5f9; cursor:not-allowed;">
+        <small style="display:block; margin-top:4px; color:#64748b; font-size:11px;">
+          {% if editing %}
+            CTRL Nº não pode ser alterado após o cadastro.
+          {% else %}
+            Gerado automaticamente pela numeração configurada. Para mudar a sequência, use o card "Numeração CTRL" na lista de TAPs.
+          {% endif %}
+        </small>
       </div>
       <div>
         <label>Cliente</label>
@@ -64,6 +73,8 @@
           <col class="c-valor">
           <col class="c-pct">
           <col class="c-corrig">
+          <col style="width:155px;">
+          <col style="width:185px;">
         </colgroup>
         <thead>
           <tr>
@@ -74,6 +85,8 @@
             <th>Valor Total</th>
             <th>% Corr.</th>
             <th>Valor Corrigido</th>
+            <th>Início<br>Atividade</th>
+            <th>Fim<br>Atividade</th>
           </tr>
         </thead>
         <tbody>
@@ -81,20 +94,29 @@
             <tr data-ordem="{{ item.ordem }}">
               <td>{{ item.ordem }}</td>
               <td>{{ item.entregavel }}</td>
-              <td><input type="number" step="0.5" min="0" name="item_{{ item.ordem }}_qtd" value="{{ '%g' % (item.qtd_recursos or 0) }}" class="inp-qtd"></td>
-              <td><input type="number" step="0.5" min="0" name="item_{{ item.ordem }}_tempo" value="{{ '%g' % (item.tempo or 0) }}" class="inp-tempo"></td>
-              <td class="valor-total">R$ 0,00</td>
-              <td><input type="number" step="0.5" min="0" max="100" name="item_{{ item.ordem }}_pct" value="{{ '%g' % ((item.percentual_correcao or 0) * 100) }}" class="inp-pct" placeholder="10 = 10%"></td>
-              <td class="valor-corrigido">R$ 0,00</td>
+              <td><input type="text" inputmode="decimal" name="item_{{ item.ordem }}_qtd" value="{% if item.qtd_recursos %}{{ '%g' % item.qtd_recursos }}{% endif %}" class="inp-qtd inp-no-spin" placeholder=""></td>
+              <td><input type="text" inputmode="decimal" name="item_{{ item.ordem }}_tempo" value="{% if item.tempo %}{{ '%g' % item.tempo }}{% endif %}" class="inp-tempo inp-no-spin" placeholder=""></td>
+              <td class="valor-total"></td>
+              <td><input type="text" inputmode="decimal" name="item_{{ item.ordem }}_pct" value="{% if item.percentual_correcao %}{{ '%g' % (item.percentual_correcao * 100) }}{% endif %}" class="inp-pct inp-no-spin"></td>
+              <td class="valor-corrigido"></td>
+              <td><input type="date" name="item_{{ item.ordem }}_inicio" value="{{ item.inicio_atividade or '' }}" class="inp-inicio"></td>
+              <td>
+                <div style="display:flex; gap:3px; align-items:center;">
+                  <input type="date" name="item_{{ item.ordem }}_fim" value="{{ item.fim_atividade or '' }}" class="inp-fim" style="flex:1; min-width:0;">
+                  <button type="button" class="btn-calc-fim" data-ordem="{{ item.ordem }}" title="Calcular Fim com base em Qtd × Tempo e Início (8h/dia, pula sáb/dom)">↻</button>
+                </div>
+              </td>
             </tr>
           {% endfor %}
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="4" style="text-align:right;"><strong>Totais</strong></td>
-            <td class="total-sem" style="font-weight:700;">R$ 0,00</td>
+            <td colspan="4"></td>
+            <td class="total-sem">R$ 0,00</td>
             <td></td>
-            <td class="total-com" style="font-weight:700;">R$ 0,00</td>
+            <td class="total-com">R$ 0,00</td>
+            <td></td>
+            <td></td>
           </tr>
         </tfoot>
       </table>
@@ -137,6 +159,46 @@
 
     form.addEventListener('input', recalcular);
     recalcular();
+
+    // Calcular Fim Atividade baseado em Qtd × Tempo + Início (8h/dia, pula sáb/dom)
+    const HORAS_DIA = 8;
+    function somarDiasUteis(dataIso, diasUteis) {
+      const d = new Date(dataIso + 'T12:00:00');
+      let restantes = Math.max(0, diasUteis - 1); // o dia de início já conta como 1 dia útil
+      while (restantes > 0) {
+        d.setDate(d.getDate() + 1);
+        const dw = d.getDay(); // 0=Dom, 6=Sab
+        if (dw !== 0 && dw !== 6) restantes--;
+      }
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const dia = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${dia}`;
+    }
+
+    document.querySelectorAll('.btn-calc-fim').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const tr = btn.closest('tr');
+        if (!tr) return;
+        const qtd = num(tr.querySelector('.inp-qtd'));
+        const tempo = num(tr.querySelector('.inp-tempo'));
+        const inicio = tr.querySelector('.inp-inicio').value;
+        const inpFim = tr.querySelector('.inp-fim');
+
+        if (!inicio) {
+          alert('Preencha a data de Início Atividade antes de calcular o Fim.');
+          return;
+        }
+        const horasTotais = qtd * tempo;
+        if (horasTotais <= 0) {
+          alert('Preencha Qtd. Rec. e Tempo (h) antes de calcular o Fim.');
+          return;
+        }
+        const diasUteis = Math.max(1, Math.ceil(horasTotais / HORAS_DIA));
+        inpFim.value = somarDiasUteis(inicio, diasUteis);
+        inpFim.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    });
   })();
 </script>
 {% endblock %}

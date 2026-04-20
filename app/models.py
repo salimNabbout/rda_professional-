@@ -37,6 +37,7 @@ class User(UserMixin, db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     role = db.Column(db.String(20), nullable=False, default="colaborador")
     acesso_tap = db.Column(db.Boolean, nullable=False, default=False)
+    acesso_produtividade = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     records = db.relationship("RDARecord", backref="owner", lazy=True, cascade="all, delete-orphan")
@@ -78,6 +79,7 @@ class RDARecord(db.Model):
     realizado = db.Column(db.Text, nullable=False)
 
     status_rda = db.Column(db.String(30), default="Em Andamento", nullable=False)
+    foi_atrasado = db.Column(db.Boolean, default=False, nullable=False)
 
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -123,6 +125,32 @@ class TAP(db.Model):
         return self.status_proposta == "Fechado"
 
 
+class RDAAuditLog(db.Model):
+    """Pilha de salvamentos do RDA — registra cada operação de gravação
+    (criação ou edição) feita por um colaborador, com data e hora do servidor."""
+    __tablename__ = "rda_audit_log"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
+    user_display = db.Column(db.String(150), nullable=False, default="")
+    action = db.Column(db.String(20), nullable=False)  # 'criar' | 'editar' | 'excluir'
+    record_id = db.Column(db.Integer, nullable=True)  # pode ser None em exclusão
+    resumo = db.Column(db.String(250), nullable=False, default="")  # ex: cliente/atividade/data
+    ts = db.Column(db.DateTime, default=datetime.utcnow, nullable=False, index=True)
+
+    user = db.relationship("User", foreign_keys=[user_id])
+
+
+class AppSetting(db.Model):
+    """Tabela key/value simples para configurações globais da app."""
+    __tablename__ = "app_setting"
+
+    id = db.Column(db.Integer, primary_key=True)
+    chave = db.Column(db.String(80), unique=True, nullable=False)
+    valor = db.Column(db.String(200), nullable=True)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+
 class TAPItem(db.Model):
     __tablename__ = "tap_item"
 
@@ -133,6 +161,8 @@ class TAPItem(db.Model):
     qtd_recursos = db.Column(db.Float, nullable=False, default=0.0)
     tempo = db.Column(db.Float, nullable=False, default=0.0)
     percentual_correcao = db.Column(db.Float, nullable=False, default=0.0)
+    inicio_atividade = db.Column(db.String(10), nullable=True)  # YYYY-MM-DD
+    fim_atividade = db.Column(db.String(10), nullable=True)  # YYYY-MM-DD — usado para auto-atraso
 
     @property
     def valor_total(self) -> float:

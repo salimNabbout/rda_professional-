@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}Avaliação IA (Experimental){% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Avaliação IA — Modo Observador</h1>
+      <p>Camada experimental. A IA apenas observa e aprende à medida que os dados são imputados. A tomada de decisão continua na Predição de Capacidade.</p>
+    </div>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-primary" href="{{ url_for('main.predicao') }}" title="Predição de Capacidade" aria-label="Predição">{{ icons.predicao() }}<span class="btn-label">Predição</span></a>
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="card" style="margin-bottom:20px; background:#fffbeb; border-left:4px solid #f59e0b;">
+  <strong style="color:#b45309;">⚠ Módulo experimental.</strong>
+  <span style="color:#92400e;">As previsões aqui exibidas são observacionais. Não usar para decisão operacional até promoção explícita.</span>
+</div>
+
+<div class="card" style="margin-bottom:20px;">
+  <h2 style="margin:0 0 12px;">Coleta de histórico para aprendizado</h2>
+  <div class="grid grid-4">
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Projetos observados</span>
+      <strong style="font-size:28px;">{{ total_projetos }}</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Entregáveis totais</span>
+      <strong style="font-size:28px;">{{ total_itens }}</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start;">
+      <span>Base completa</span>
+      <strong style="font-size:28px;">{{ base_completa }}</strong>
+    </div>
+    <div class="summary" style="flex-direction:column; align-items:flex-start; background:#eef3ff; border-left:4px solid #3e63dd;">
+      <span>Fechados c/ resultado real</span>
+      <strong style="font-size:28px;">{{ fechados }} / {{ meta }}</strong>
+      <span style="font-size:11px; color:#64748b; margin-top:4px;">{{ progresso_pct }}% da amostra mínima para treinar</span>
+    </div>
+  </div>
+  <div style="margin-top:16px; height:12px; background:#e5e7eb; border-radius:8px; overflow:hidden;">
+    <div style="width:{{ progresso_pct }}%; height:100%; background:linear-gradient(90deg,#3e63dd,#10b981);"></div>
+  </div>
+</div>
+
+<div class="card">
+  <h2 style="margin:0 0 12px;">Roadmap do módulo</h2>
+  <ol style="margin:0; padding-left:20px; font-size:13px; color:#334155; line-height:1.8;">
+    <li><strong>Fase 1 — Coleta (atual):</strong> capturar <code>fim_real</code> e <code>custo_real</code> em cada entregável concluído. Sem isso, não há aprendizado.</li>
+    <li><strong>Fase 2 — Shadow:</strong> rodar modelo em paralelo com a Predição e registrar divergências. Painel comparativo Predição × IA × Real.</li>
+    <li><strong>Fase 3 — Validação:</strong> métricas de qualidade (MAE do atraso, acurácia de risco) acompanhadas semanalmente.</li>
+    <li><strong>Fase 4 — Promoção:</strong> quando MAE ≤ 3 dias em ≥ {{ meta }} entregáveis fechados, abrir decisão humana de promover a IA.</li>
+  </ol>
+</div>
+{% endblock %}

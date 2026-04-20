@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% import '_icons.html' as icons %}
+{% block title %}Meu Perfil{% endblock %}
+{% block content %}
+<div class="banner">
+  <div class="topbar">
+    <div>
+      <h1>Meu Perfil</h1>
+      <p>Informações da sua conta no CETEM Flow.</p>
+    </div>
+    <div class="actions icon-nav">
+      <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar" aria-label="Voltar">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
+    </div>
+  </div>
+</div>
+
+<div class="grid grid-2" style="align-items:start;">
+
+  <div class="card">
+    <h2 style="margin:0 0 16px;">Dados da conta</h2>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div>
+        <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#64748b; letter-spacing:.5px;">Nome completo</span>
+        <p style="margin:4px 0 0; font-size:16px; font-weight:600;">{{ current_user.display_name }}</p>
+      </div>
+      <div>
+        <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#64748b; letter-spacing:.5px;">Usuário (login)</span>
+        <p style="margin:4px 0 0; font-size:14px; color:#475569;">{{ current_user.username }}</p>
+      </div>
+      <div>
+        <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#64748b; letter-spacing:.5px;">Perfil</span>
+        <p style="margin:4px 0 0;">
+          <span class="status {% if current_user.is_admin() %}concluido{% elif current_user.is_gestor() %}em-andamento{% else %}atrasado{% endif %}">
+            {{ current_user.role | capitalize }}
+          </span>
+        </p>
+      </div>
+      <div>
+        <span style="font-size:11px; font-weight:700; text-transform:uppercase; color:#64748b; letter-spacing:.5px;">Membro desde</span>
+        <p style="margin:4px 0 0; font-size:14px; color:#475569;">{{ current_user.created_at.strftime('%d/%m/%Y') if current_user.created_at else '—' }}</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2 style="margin:0 0 16px;">Alterar senha</h2>
+    <form method="post" action="{{ url_for('auth.change_password') }}">
+      {{ form.hidden_tag() }}
+      <div style="margin-bottom:14px;">
+        <label>Senha atual</label>
+        {{ form.current_password(class="", placeholder="Sua senha atual", required=True) }}
+      </div>
+      <div style="margin-bottom:14px;">
+        <label>Nova senha</label>
+        {{ form.password(class="", placeholder="Mínimo 8 caracteres, letra e número", required=True) }}
+        <small style="color:#64748b; font-size:11px;">Mínimo 8 caracteres com letra e número.</small>
+      </div>
+      <div style="margin-bottom:20px;">
+        <label>Confirmar nova senha</label>
+        {{ form.password2(class="", placeholder="Repita a nova senha", required=True) }}
+      </div>
+      {% for field in form %}
+        {% if field.errors %}
+          {% for err in field.errors %}
+            <div class="alert" style="margin-bottom:8px;">{{ err }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endfor %}
+      <button type="submit" class="btn btn-primary btn-icon-inline">{{ icons.save() }}<span>Salvar nova senha</span></button>
+    </form>
+  </div>
+
+</div>
+{% endblock %}

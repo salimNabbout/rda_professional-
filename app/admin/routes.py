@@ -107,11 +107,12 @@ def create_user():
         role=role,
         acesso_tap=acesso_tap,
         acesso_produtividade=acesso_produtividade,
+        must_change_password=True,
     )
     user.set_password(password)
     db.session.add(user)
     db.session.commit()
-    flash(f"Usuário '{username}' criado com sucesso.", "success")
+    flash(f"Usuário '{username}' criado. Ele deverá trocar a senha no primeiro acesso.", "success")
     return redirect(url_for("admin.users"))
 
 

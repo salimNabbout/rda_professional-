@@ -1,8 +1,9 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, logout_user, login_required, current_user
 from sqlalchemy import func
 from app.extensions import db
 from app.models import User
+from app.forms import ChangePasswordForm, ForcedChangePasswordForm
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
@@ -22,6 +23,11 @@ def login():
             return render_template("auth/login.html", register_mode=False)
 
         login_user(user)
+
+        if user.must_change_password:
+            flash("Por segurança, defina uma nova senha antes de continuar.", "error")
+            return redirect(url_for("auth.change_password"))
+
         flash("Login realizado com sucesso.", "success")
         return redirect(url_for("main.index"))
 
@@ -56,6 +62,38 @@ def register():
         return redirect(url_for("auth.login"))
 
     return render_template("auth/login.html", register_mode=True)
+
+
+@auth_bp.route("/trocar-senha", methods=["GET", "POST"])
+@login_required
+def change_password():
+    forced = current_user.must_change_password
+
+    if forced:
+        form = ForcedChangePasswordForm()
+    else:
+        form = ChangePasswordForm()
+
+    if form.validate_on_submit():
+        if not forced:
+            if not current_user.check_password(form.current_password.data):
+                flash("Senha atual incorreta.", "error")
+                return render_template("auth/change_password.html", form=form, forced=False)
+
+        current_user.set_password(form.password.data)
+        current_user.must_change_password = False
+        db.session.commit()
+        flash("Senha alterada com sucesso.", "success")
+        return redirect(url_for("main.index"))
+
+    return render_template("auth/change_password.html", form=form, forced=forced)
+
+
+@auth_bp.route("/perfil")
+@login_required
+def perfil():
+    form = ChangePasswordForm()
+    return render_template("auth/perfil.html", form=form)
 
 
 @auth_bp.route("/logout")

@@ -38,6 +38,7 @@ class User(UserMixin, db.Model):
     role = db.Column(db.String(20), nullable=False, default="colaborador")
     acesso_tap = db.Column(db.Boolean, nullable=False, default=False)
     acesso_produtividade = db.Column(db.Boolean, nullable=False, default=False)
+    must_change_password = db.Column(db.Boolean, nullable=False, default=False, server_default='0')
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     records = db.relationship("RDARecord", backref="owner", lazy=True, cascade="all, delete-orphan")

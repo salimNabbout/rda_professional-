@@ -74,6 +74,9 @@ def _ensure_schema_upgrades():
         if "acesso_produtividade" not in cols_user:
             with db.engine.begin() as conn:
                 conn.execute(text("ALTER TABLE user ADD COLUMN acesso_produtividade BOOLEAN NOT NULL DEFAULT 0"))
+        if "must_change_password" not in cols_user:
+            with db.engine.begin() as conn:
+                conn.execute(text("ALTER TABLE user ADD COLUMN must_change_password BOOLEAN NOT NULL DEFAULT 0"))
 
     if "rda_record" not in inspector.get_table_names():
         return

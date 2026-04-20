@@ -41,6 +41,7 @@
     {% if current_user.is_admin() or current_user.acesso_produtividade %}
     <a class="sb-item sb-pdi" href="{{ url_for('main.performance_colaboradores') }}" title="PDI">{{ icons.produtividade() }}<span>PDI</span></a>
     {% endif %}
+    <a class="sb-item sb-perfil" href="{{ url_for('auth.perfil') }}" title="Meu Perfil">{{ icons.perfil() }}<span>Meu Perfil</span></a>
     {% if current_user.is_admin() %}
     <a class="sb-item sb-danger" href="{{ url_for('main.avaliacao') }}" title="Avaliação IA">{{ icons.avaliacao() }}<span>Avaliação IA</span></a>
     <a class="sb-item sb-admin" href="{{ url_for('admin.users') }}" title="Usuários">{{ icons.users() }}<span>Usuários</span></a>
@@ -86,6 +87,8 @@
     #sidebar .sb-pred:hover { background: rgba(251,191,36,0.18) !important; color: #fcd34d !important; }
     #sidebar .sb-pdi    { color: #4ade80 !important; }
     #sidebar .sb-pdi:hover { background: rgba(74,222,128,0.18) !important; color: #86efac !important; }
+    #sidebar .sb-perfil  { color: #38bdf8 !important; }
+    #sidebar .sb-perfil:hover { background: rgba(56,189,248,0.18) !important; color: #7dd3fc !important; }
     #sidebar .sb-danger { color: #f87171 !important; }
     #sidebar .sb-danger:hover { background: rgba(248,113,113,0.2) !important; color: #fca5a5 !important; }
     #sidebar .sb-admin  { color: #94a3b8 !important; }

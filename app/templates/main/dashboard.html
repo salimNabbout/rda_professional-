@@ -12,9 +12,7 @@
       <a class="btn btn-icon btn-success" href="{{ url_for('main.export_csv', **filters) }}" title="Exportar CSV" aria-label="Exportar CSV">{{ icons.csv() }}<span class="btn-label">CSV</span></a>
       <a class="btn btn-icon btn-success" href="{{ url_for('main.export_pdf', **filters) }}" title="Exportar PDF" aria-label="Exportar PDF">{{ icons.pdf() }}<span class="btn-label">PDF</span></a>
       <a class="btn btn-icon btn-secondary" href="{{ url_for('main.api_records', **filters) }}" title="API JSON" aria-label="API JSON">{{ icons.json() }}<span class="btn-label">API</span></a>
-      {% if current_user.acesso_tap or current_user.is_admin() %}
-        <a class="btn btn-icon btn-primary" href="{{ url_for('tap.list_taps') }}" title="TAP" aria-label="TAP">{{ icons.tap() }}<span class="btn-label">TAP</span></a>
-      {% endif %}
+      <a class="btn btn-icon btn-primary" href="{{ url_for('tap.list_taps') }}" title="TAP" aria-label="TAP">{{ icons.tap() }}<span class="btn-label">TAP</span></a>
       <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance') }}" title="Performance" aria-label="Performance">{{ icons.performance() }}<span class="btn-label">Performance</span></a>
       {% if current_user.is_admin() %}
         <a class="btn btn-icon btn-primary" href="{{ url_for('main.predicao') }}" title="Predição de Capacidade" aria-label="Predição">{{ icons.predicao() }}<span class="btn-label">Predição</span></a>

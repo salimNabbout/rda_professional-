@@ -30,7 +30,9 @@
       <span>CETEM Tecnologia</span>
     </div>
     <a class="sb-item sb-rda" href="{{ url_for('main.index') }}" title="RDA">{{ icons.back() }}<span>RDA</span></a>
+    {% if current_user.is_admin() %}
     <a class="sb-item sb-tap" href="{{ url_for('tap.list_taps') }}" title="TAP">{{ icons.tap() }}<span>TAP</span></a>
+    {% endif %}
     <a class="sb-item sb-perf" href="{{ url_for('main.performance') }}" title="Performance">{{ icons.performance() }}<span>Performance</span></a>
     <a class="sb-item sb-gantt" href="{{ url_for('main.performance_gantt') }}" title="Gantt">{{ icons.gantt() }}<span>Gantt</span></a>
     {% if current_user.is_admin() %}

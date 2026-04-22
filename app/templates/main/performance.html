@@ -9,6 +9,7 @@
       <p>Horas orçadas no TAP comparadas com as horas registradas no RDA.</p>
     </div>
     <div class="actions icon-nav">
+      {% if current_user.is_admin() %}<a class="btn btn-icon btn-primary" href="{{ url_for('tap.list_taps') }}" title="TAP" aria-label="TAP">{{ icons.tap() }}<span class="btn-label">TAP</span></a>{% endif %}
       <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance_gantt') }}" title="Cronograma Gantt" aria-label="Gantt">{{ icons.gantt() }}<span class="btn-label">Gantt</span></a>
       <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
     </div>

@@ -9,6 +9,7 @@
       <p>Avalia se o escopo do TAP cabe no prazo planejado, considerando recursos × dias úteis × {{ premissas.horas_uteis_dia }}h/dia.</p>
     </div>
     <div class="actions icon-nav">
+      {% if current_user.is_admin() %}<a class="btn btn-icon btn-primary" href="{{ url_for('tap.list_taps') }}" title="TAP" aria-label="TAP">{{ icons.tap() }}<span class="btn-label">TAP</span></a>{% endif %}
       <a class="btn btn-icon btn-success" href="{{ url_for('main.predicao_export_xlsx') }}" title="Exportar Excel" aria-label="Exportar Excel">{{ icons.excel() }}<span class="btn-label">Excel</span></a>
       <a class="btn btn-icon btn-primary" href="{{ url_for('main.performance') }}" title="Performance" aria-label="Performance">{{ icons.performance() }}<span class="btn-label">Performance</span></a>
       <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>

@@ -9,6 +9,7 @@
       <p>Pilha de salvamentos do RDA por colaborador. Mostra data, hora e atividade de cada gravação.</p>
     </div>
     <div class="actions icon-nav">
+      <a class="btn btn-icon btn-primary" href="{{ url_for('tap.list_taps') }}" title="TAP" aria-label="TAP">{{ icons.tap() }}<span class="btn-label">TAP</span></a>
       <a class="btn btn-icon btn-secondary" href="{{ url_for('admin.users') }}" title="Usuários" aria-label="Usuários">{{ icons.users() }}<span class="btn-label">Usuários</span></a>
       <a class="btn btn-icon btn-secondary" href="{{ url_for('main.index') }}" title="Voltar ao RDA" aria-label="Voltar ao RDA">{{ icons.back() }}<span class="btn-label">Voltar</span></a>
     </div>

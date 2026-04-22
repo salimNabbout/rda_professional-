@@ -8,6 +8,9 @@
       <p>Historico de acoes no sistema.</p>
     </div>
     <div class="actions">
+      {% if current_user.is_admin() %}
+      <a class="btn btn-primary" href="{{ url_for('tap.list_taps') }}">TAP</a>
+      {% endif %}
       <a class="btn btn-secondary" href="{{ url_for('admin.users') }}">Usuarios</a>
       <a class="btn btn-secondary" href="{{ url_for('main.index') }}">Voltar</a>
     </div>
